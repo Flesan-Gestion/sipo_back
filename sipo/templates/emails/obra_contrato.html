@@ -1,0 +1,14 @@
+{% extends "emails/base_sip_obra.html" %}
+{% block body %}
+<tr style="float:left;width:540px;background-color:white;padding-left:60px;padding-right:60px;">
+  <td><span style="color:#4d4d4d;font-weight:bold;">Estimado/a Administrador y Asistente de Obra,</span></td>
+</tr>
+<tr style="float:left;width:100%;height:10px;"></tr>
+<tr style="float:left;width:540px;background-color:white;padding-left:60px;padding-right:60px;">
+  <td>
+    <span style="text-align:justify;">
+      El contrato de {{ nombre_candidato }} ya se encuentra disponible para ser firmado por el trabajador.
+    </span>
+  </td>
+</tr>
+{% endblock %}

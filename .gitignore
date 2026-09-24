@@ -1,0 +1,13 @@
+**/__pycache__/
+**/.vscode/
+.pytest_cache/
+venv/
+.venv/
+.env
+.env.*
+!.env.example
+cache.json
+media/
+*.pyc
+*.pyo
+db.sqlite3

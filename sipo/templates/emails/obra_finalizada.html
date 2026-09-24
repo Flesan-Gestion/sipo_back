@@ -1,0 +1,26 @@
+{% extends "emails/base_sip_obra.html" %}
+{% block body %}
+<tr style="float:left;width:540px;background-color:white;padding-left:60px;padding-right:60px;">
+  <td><span style="color:#4d4d4d;font-weight:bold;">Estimado/a,</span></td>
+</tr>
+<tr style="float:left;width:100%;height:10px;"></tr>
+<tr style="float:left;width:540px;background-color:white;padding-left:60px;padding-right:60px;">
+  <td>
+    <span style="text-align:justify;">
+      Les comunicamos que el sip de obra N°<b>{{ sip_id }}</b> a finalizado con un total de
+      <b>{{ total_contratos }}</b> contratos listos para ser firmados y ya cuentan con su creacion en builder
+      para la empresa <b>{{ empresa }}</b> unidad de negocio: <b>{{ un }}</b> y centro de gestión: <b>{{ cg }}</b>
+    </span>
+  </td>
+</tr>
+{% if portal_url %}
+<tr style="float:left;width:540px;background-color:white;padding-left:60px;padding-right:60px;">
+  <td>
+    <a href="{{ portal_url }}"
+       style="background-color:#b2b2b2;color:white;text-decoration:none;padding:10px 15px;border-radius:10px;text-align:center;display:block;width:300px;margin:0 120px 1em 120px;">
+      IR A LA PAGINA
+    </a>
+  </td>
+</tr>
+{% endif %}
+{% endblock %}
