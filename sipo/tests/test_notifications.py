@@ -1,9 +1,9 @@
 """Tests de notificaciones SIPO Obra (correos vivos + override)."""
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from django.core import mail
-from django.test import SimpleTestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
 
 from sipo.services.notifications import (
     EVENTO_REVISION,
@@ -185,3 +185,51 @@ class CollectErrorsTests(SimpleTestCase):
         )
         self.assertEqual(len(errores), 1)
         self.assertIn('WORKER_STILL_HIRED', errores[0])
+
+
+@override_settings(
+    SIP_EMAIL_ENABLED=True,
+    SIP_EMAIL_FORCE_OVERRIDE=False,
+    SIP_EMAIL_FROM='equipo_desarrollo@flesan.cl',
+    SIP_EMAIL_FROM_NAME='Sip Obra',
+    SIPO_PUBLIC_ORIGIN='http://localhost:5173',
+    EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend',
+)
+class InvitacionColaboradorTests(TestCase):
+    def setUp(self):
+        mail.outbox.clear()
+        self.user = MagicMock()
+        self.user.is_authenticated = True
+        self.user.sip_rol_id = 4
+        self.user.email = 'supervisor@flesan.cl'
+        self.user.id = 40
+        self.user.pk = 40
+
+    def test_guardar_supervisor_incluye_link_y_qr(self):
+        from sipo.models_ficha import SipoFichaIngreso
+        from sipo.services.fichas import create_ficha
+
+        with patch('sipo.services.fichas.get_scope_for_user', return_value={'is_admin': True}):
+            with patch('sipo.services.fichas.resolve_ficha_catalog_fields', return_value={}):
+                ficha = create_ficha(
+                    data={
+                        'solo_supervisor': '1',
+                        'cargo': 'Maestro',
+                        'fecha_ingreso': '2026-10-01',
+                        'correo_colaborador': 'colaborador@flesan.cl',
+                        'sueldo_liquido': '650000',
+                        'tipo_contrato': 'Indefinido',
+                        'horario': 'L-V 08-17',
+                    },
+                    files={},
+                    user=self.user,
+                )
+        self.assertEqual(ficha.estado, SipoFichaIngreso.ESTADO_PENDIENTE_DATOS_COLABORADOR)
+        self.assertEqual(len(mail.outbox), 1)
+        msg = mail.outbox[0]
+        self.assertEqual(msg.to, ['colaborador@flesan.cl'])
+        html = msg.alternatives[0][0]
+        self.assertIn('/portal-candidato/', html)
+        self.assertIn('cid:qr_colaborador', html)
+        self.assertIn('data:image/png;base64,', html)
+        self.assertTrue(msg.attachments)

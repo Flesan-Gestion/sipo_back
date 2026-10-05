@@ -362,7 +362,7 @@ class SipoCandidatoWriteSerializer(serializers.Serializer):
     cf_rrhh_sip_obra_candidato_nombre = _req_char(100)
     cf_rrhh_sip_obra_candidato_segundo_nombre = _opt_char(100)
     cf_rrhh_sip_obra_candidato_ap = _req_char(100)
-    cf_rrhh_sip_obra_candidato_am = _opt_char(100)
+    cf_rrhh_sip_obra_candidato_am = _req_char(100)
     cf_rrhh_sip_obra_candidato_genero = _req_char(50)
     cf_rrhh_sip_obra_candidato_fecha_nacimiento = serializers.DateField(
         required=True, allow_null=False
@@ -388,6 +388,9 @@ class SipoCandidatoWriteSerializer(serializers.Serializer):
     cf_rrhh_sip_obra_candidato_numcta = _req_char(100)
     cf_rrhh_sip_obra_candidato_anticipo = _opt_char(50)
     cf_rrhh_sip_obra_candidato_nomcar = _req_char(100)
+    cf_rrhh_sip_obra_candidato_jefe_user_id = _req_char(50)
+    cf_rrhh_sip_obra_candidato_jefe_nombre = _req_char(255)
+    cf_rrhh_sip_obra_candidato_jefe_correo = _opt_char(150)
     cf_rrhh_sip_obra_candidato_horario_trabajo = _req_char(100)
     cf_rrhh_sip_obra_candidato_sueldo = _req_char(100)
     cf_rrhh_sip_obra_candidato_cuenta_gasto = _req_char(100)

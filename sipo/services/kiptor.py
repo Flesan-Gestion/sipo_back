@@ -16,6 +16,7 @@ from django.db import connections
 
 from ..constants import SIPO_CANDIDATO_ACTIVO, SIPO_CANDIDATO_SELECCIONADO
 from ..models import SipoCandidatoObra, SipoObra
+from .candidato_validaciones import apply_sueldo_base_piso
 
 logger = logging.getLogger(__name__)
 
@@ -321,7 +322,7 @@ class KiptorService:
 
     @staticmethod
     def persist_sueldo_base(candidato: SipoCandidatoObra, sueldo_base: int | Decimal) -> None:
-        entero = int(sueldo_base)
+        entero = apply_sueldo_base_piso(sueldo_base)
         candidato.cf_rrhh_sip_obra_sueldo_base = Decimal(entero)
         candidato.save(
             using=SIP_DB,

@@ -7,7 +7,7 @@ import logging
 from django.db import connections
 from django.db.utils import OperationalError, ProgrammingError
 
-logger = logging.getLogger(__name__)
+from sipo.services.maestros import get_cargos_catalogo
 DW_CHILE_DB = 'dw_chile'
 
 AFP_OPTIONS = (
@@ -292,4 +292,5 @@ def get_candidato_maestros() -> dict:
         'tipos_contrato': list(TIPO_CONTRATO_OPTIONS),
         'si_no': list(SI_NO_OPTIONS),
         'valores_plan': list(VALOR_PLAN_OPTIONS),
+        'cargos': get_cargos_catalogo(),
     }

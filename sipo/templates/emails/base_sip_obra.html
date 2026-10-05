@@ -1,30 +1,40 @@
-<table style="display:block;width:600px;float:left;background-color:white;color:#4d4d4d;font-size:12pt;">
-  <tbody style="display:block;border-spacing:0;float:left;background-color:white;">
-    <tr style="float:left;width:100%;height:10px;"></tr>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+</head>
+<body style="margin:0;padding:0;background:#ffffff;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="width:600px;max-width:600px;background-color:#ffffff;color:#4d4d4d;font-size:12pt;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;">
+  <tbody>
+    <tr><td height="10" style="height:10px;font-size:0;line-height:0;">&nbsp;</td></tr>
     {% if header_img %}
-    <tr style="float:left;width:100%;">
-      <td style="display:block;padding:0;">
-        <img src="{{ img_base }}/{{ header_img }}" style="width:100%;" alt="">
+    <tr>
+      <td style="padding:0;">
+        <img src="http://www.gestionflesan.cl/controlflujo/system/view/sip/img/graficas_a_cambiar/{{ header_img }}" alt="" width="600" border="0" style="width:100%;max-width:600px;height:auto;display:block;border:0;">
       </td>
     </tr>
     {% endif %}
+    <tr><td height="10" style="height:10px;font-size:0;line-height:0;">&nbsp;</td></tr>
     {% block body %}{% endblock %}
-    <tr style="float:left;width:100%;height:10px;"></tr>
-    <tr style="float:left;width:100%;">
-      <td style="display:block;width:100%;">
-        <img src="{{ img_base }}/footer_notificacion_2020.png" style="width:100%;" alt="">
+    <tr><td height="10" style="height:10px;font-size:0;line-height:0;">&nbsp;</td></tr>
+    <tr>
+      <td style="padding:0;">
+        <img src="http://www.gestionflesan.cl/controlflujo/system/view/sip/img/graficas_a_cambiar/Footer_Ger_Personas.jpg" alt="Gerencia de Personas Flesan" width="600" border="0" style="width:100%;max-width:600px;height:auto;display:block;border:0;">
       </td>
     </tr>
-    <tr style="float:left;width:100%;height:10px;"></tr>
-    <tr style="float:left;width:540px;padding:0 60px;">
-      <td>
-        <strong style="text-align:center;display:block;font-size:8pt;padding:5px 0 10px 0;">
+    <tr><td height="10" style="height:10px;font-size:0;line-height:0;">&nbsp;</td></tr>
+    <tr>
+      <td style="padding:0 60px;">
+        <strong style="text-align:center;display:block;font-size:8pt;padding:5px 0 10px;">
           Esté correo se ha generado automáticamente, favor no responda.
           Si existen comentarios o dudas con respecto a la utilización de la plataforma Solicitud de Incorporación,
           comuníquese con
-          <a href="mailto:jorge.barrozo@flesan.cl" target="_blank">jorge.barrozo@flesan.cl</a>
+          <a href="mailto:martin.norambuena@flesan.cl">martin.norambuena@flesan.cl</a>
         </strong>
       </td>
     </tr>
   </tbody>
 </table>
+</body>
+</html>

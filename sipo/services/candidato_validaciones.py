@@ -7,7 +7,9 @@ from typing import Optional
 
 from rest_framework.exceptions import ValidationError
 
-SUELDO_MINIMO_ESTANDAR = 581_000
+from sipo.constants import IMM_ACTUAL, SUELDO_LIQUIDO_MINIMO
+
+SUELDO_MINIMO_ESTANDAR = SUELDO_LIQUIDO_MINIMO
 
 # external_code horario → (umbral_validacion, mensaje_piso)
 SUELDO_PISO_POR_HORARIO = {
@@ -413,7 +415,7 @@ def calcular_bono_mineria_cfm(
     colacion = 50_000.0
     tasa_salud = 0.07
     tasa_cesantia = 0.0
-    imm = 539_000.0
+    imm = float(IMM_ACTUAL)
     tope_gratificacion_mensual = (imm * 4.75) / 12
     tope_imponible_afp = 90 * valor_uf if valor_uf > 0 else float('inf')
     tope_imponible_cesantia = 135.2 * valor_uf if valor_uf > 0 else float('inf')
@@ -533,13 +535,25 @@ def resolve_sueldo_minimo(
     if cargo_u in CARGOS_EXENTOS_SUELDO_MINIMO:
         return True, 0, ''
 
-    if monto <= SUELDO_MINIMO_ESTANDAR:
+    if monto < SUELDO_MINIMO_ESTANDAR:
+        fmt = f'{SUELDO_MINIMO_ESTANDAR:,}'.replace(',', '.')
         return (
             False,
             SUELDO_MINIMO_ESTANDAR,
-            'El monto Liquido Pactado, no puede ser menor a 581.000 pesos',
+            f'El monto Liquido Pactado, no puede ser menor a {fmt} pesos',
         )
     return True, SUELDO_MINIMO_ESTANDAR, ''
+
+
+def apply_sueldo_base_piso(sueldo_base) -> int:
+    """Fuerza piso IMM_ACTUAL cuando el sueldo base es positivo y menor al IMM."""
+    try:
+        entero = int(sueldo_base or 0)
+    except (TypeError, ValueError):
+        entero = 0
+    if entero > 0 and entero < IMM_ACTUAL:
+        return IMM_ACTUAL
+    return entero
 
 
 def validate_fechas_contrato(data: dict) -> dict[str, str]:
@@ -579,6 +593,14 @@ def validate_candidato_negocio(data: dict, *, ubicacion: str | None = None) -> d
             errors['cf_rrhh_sip_obra_candidato_rut'] = (
                 'RUT bloqueado; contactar a oficina central.'
             )
+        else:
+            from .rut_validation import validar_rut_activo
+
+            activo = validar_rut_activo(str(rut_raw))
+            if activo.get('activo'):
+                errors['cf_rrhh_sip_obra_candidato_rut'] = activo.get('motivo') or (
+                    'El trabajador aún está activo en SAP.'
+                )
 
     nacimiento = parse_date(data.get('cf_rrhh_sip_obra_candidato_fecha_nacimiento'))
     ingreso = parse_date(data.get('cf_rrhh_sip_obra_candidato_fecha_ingreso'))

@@ -94,6 +94,10 @@ def _full_ficha_data(**overrides):
         'fecha_ingreso': '2026-09-04',
         'correo_jefe_directo': 'jefe@flesan.cl',
         'correo_admin_obra': 'adminobra@flesan.cl',
+        'correo_colaborador': 'colaborador@flesan.cl',
+        'jefe_user_id': '109076',
+        'jefe_nombre': 'Jefe Demo',
+        'jefe_correo': 'jefe.planta@flesan.cl',
         'nombres': 'Martin Alonso',
         'apellido_paterno': 'Norambuena',
         'apellido_materno': 'Herrera',
@@ -220,28 +224,30 @@ class SipoFichaAprobacionFlujoTests(TestCase):
         self.jefe = _jefe_user()
         self.ficha = _seed_ficha()
 
-    def test_flujo_jefe_luego_rrhh_hasta_aprobada(self):
-        with patch('sipo.services.fichas.apply_ficha_scope', side_effect=lambda qs, _u: qs):
-            ficha = aprobar_ficha(ficha_id=self.ficha.id, user=self.jefe)
-        self.assertEqual(ficha.estado, SipoFichaIngreso.ESTADO_PENDIENTE_RRHH)
-        self.assertEqual(ficha.aprobado_jefe_por, 'jefe@flesan.cl')
-
+    def test_flujo_rrhh_luego_jefe_hasta_aprobada(self):
+        self.ficha.estado = SipoFichaIngreso.ESTADO_PENDIENTE_RRHH
+        self.ficha.save(update_fields=['estado'])
         with patch('sipo.services.fichas.apply_ficha_scope', side_effect=lambda qs, _u: qs):
             ficha = aprobar_ficha(ficha_id=self.ficha.id, user=self.rrhh)
-        self.assertEqual(ficha.estado, SipoFichaIngreso.ESTADO_APROBADA)
+        self.assertEqual(ficha.estado, SipoFichaIngreso.ESTADO_PENDIENTE_JEFE_TERRENO)
         self.assertEqual(ficha.aprobado_rrhh_por, 'rrhh@flesan.cl')
+
+        with patch('sipo.services.fichas.apply_ficha_scope', side_effect=lambda qs, _u: qs):
+            ficha = aprobar_ficha(ficha_id=self.ficha.id, user=self.jefe)
+        self.assertEqual(ficha.estado, SipoFichaIngreso.ESTADO_APROBADA)
+        self.assertEqual(ficha.aprobado_jefe_por, 'jefe@flesan.cl')
 
     def test_admin_aprueba_nivel_rrhh_directo(self):
         self.ficha.estado = SipoFichaIngreso.ESTADO_PENDIENTE_RRHH
         self.ficha.save(update_fields=['estado'])
         with patch('sipo.services.fichas.get_scope_for_user', return_value={'is_admin': True}):
             ficha = aprobar_ficha(ficha_id=self.ficha.id, user=self.admin)
-        self.assertEqual(ficha.estado, SipoFichaIngreso.ESTADO_APROBADA)
+        self.assertEqual(ficha.estado, SipoFichaIngreso.ESTADO_PENDIENTE_JEFE_TERRENO)
 
     def test_sin_paso_admin_obra(self):
         with patch('sipo.services.fichas.get_scope_for_user', return_value={'is_admin': True}):
             ficha = aprobar_ficha(ficha_id=self.ficha.id, user=self.admin)
-        self.assertEqual(ficha.estado, SipoFichaIngreso.ESTADO_PENDIENTE_RRHH)
+        self.assertEqual(ficha.estado, SipoFichaIngreso.ESTADO_APROBADA)
         self.assertNotEqual(ficha.estado, 'PENDIENTE_ADMIN')
 
     def test_rechazar_con_comentario(self):
@@ -316,7 +322,7 @@ class SipoFichaAprobacionFlujoTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
             _response_payload(response)['estado'],
-            SipoFichaIngreso.ESTADO_PENDIENTE_RRHH,
+            SipoFichaIngreso.ESTADO_APROBADA,
         )
 
         ficha2 = _seed_ficha(rut='2-7', nombres='Otro')

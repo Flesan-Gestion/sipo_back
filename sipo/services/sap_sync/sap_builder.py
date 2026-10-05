@@ -317,6 +317,7 @@ def build_emp_job_payload(ctx: SapSyncContext) -> dict[str, Any]:
         'customString5': 'No',
         'customString6': 'No',
         'customString7': map_anticipo_sap(ctx.candidato.cf_rrhh_sip_obra_candidato_anticipo),
+        'managerId': str(getattr(ctx.candidato, 'cf_rrhh_sip_obra_candidato_jefe_user_id', '') or ''),
     }
 
 

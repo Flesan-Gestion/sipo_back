@@ -189,10 +189,10 @@ def build_ficha_pdf(ficha: SipoFichaIngreso) -> bytes:
         [
             [
                 _cell('Nombres', ficha.nombres, styles),
-                _cell('Apellido Paterno', ficha.apellido_paterno, styles),
+                _cell('Primer Apellido', ficha.apellido_paterno, styles),
             ],
             [
-                _cell('Apellido Materno', ficha.apellido_materno, styles),
+                _cell('Segundo Apellido', ficha.apellido_materno, styles),
                 _cell('RUT', ficha.rut, styles),
             ],
             [

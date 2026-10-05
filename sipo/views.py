@@ -280,6 +280,20 @@ class SipoCandidatoMaestrosView(APIView):
         return ApiResponseSuccess(get_candidato_maestros()).response()
 
 
+class SipoPersonalPlantaView(APIView):
+    permission_classes = [IsSipoAuthenticated]
+
+    def get(self, request):
+        from rest_framework.exceptions import ValidationError
+
+        from .services.personal_planta import list_personal_planta
+
+        cc = (request.query_params.get('centro_costo') or '').strip()
+        if not cc:
+            raise ValidationError({'centro_costo': 'Debe indicar el centro de costo.'})
+        return ApiResponseSuccess(list_personal_planta(cc)).response()
+
+
 class SipoCandidatoUploadDocView(APIView):
     permission_classes = [IsSipoAuthenticated]
 

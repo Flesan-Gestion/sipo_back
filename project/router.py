@@ -12,6 +12,8 @@ class SipoObraRouter:
     default_models = {
         'sipofichaingreso',
         'siposolicitudhistorial',
+        'sipocandidatoacceso',
+        'sipofichaacceso',
     }
 
     def db_for_read(self, model, **hints):

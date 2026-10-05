@@ -3,12 +3,37 @@ from rest_framework import serializers
 from sipo.models_ficha import SipoFichaIngreso
 from sipo.services.ficha_labels import resolve_catalog_label
 from sipo.services.fichas import (
+    _is_supervisor,
     accion_aprobar_label,
     user_can_aprobar_ficha,
     user_can_editar_ficha,
     user_can_eliminar_ficha,
     user_can_rechazar_ficha,
     user_can_retroceder_ficha,
+)
+
+FICHA_DETAIL_RRHH_FIELDS = (
+    'razon_social_id',
+    'razon_social_nombre',
+    'obra',
+    'centro_costo_id',
+    'centro_costo_nombre',
+    'correo_jefe_directo',
+    'correo_admin_obra',
+    'jefe_user_id',
+    'jefe_nombre',
+    'jefe_correo',
+    'cuenta_gasto',
+    'dias_contrato',
+    'aprobado_jefe_por',
+    'aprobado_jefe_at',
+    'aprobado_admin_por',
+    'aprobado_admin_at',
+    'aprobado_rrhh_por',
+    'aprobado_rrhh_at',
+    'rechazo_comentario',
+    'rechazo_por',
+    'rechazo_at',
 )
 
 
@@ -48,6 +73,8 @@ class SipoFichaIngresoListSerializer(serializers.ModelSerializer):
             'accion_aprobar_label',
             'correo_jefe_directo',
             'correo_admin_obra',
+            'correo_colaborador',
+            'creado_por',
             'created_at',
         )
 
@@ -71,7 +98,9 @@ class SipoFichaIngresoListSerializer(serializers.ModelSerializer):
         return user_can_rechazar_ficha(obj, user)
 
     def get_can_editar(self, obj):
-        return user_can_editar_ficha(obj, None)
+        request = self.context.get('request')
+        user = getattr(request, 'user', None) if request else None
+        return user_can_editar_ficha(obj, user)
 
     def get_can_retroceder(self, obj):
         request = self.context.get('request')
@@ -124,6 +153,10 @@ class SipoFichaIngresoDetailSerializer(serializers.ModelSerializer):
             'fecha_ingreso',
             'correo_jefe_directo',
             'correo_admin_obra',
+            'correo_colaborador',
+            'jefe_user_id',
+            'jefe_nombre',
+            'jefe_correo',
             'nombres',
             'apellido_paterno',
             'apellido_materno',
@@ -210,7 +243,9 @@ class SipoFichaIngresoDetailSerializer(serializers.ModelSerializer):
         return user_can_rechazar_ficha(obj, user)
 
     def get_can_editar(self, obj):
-        return user_can_editar_ficha(obj, None)
+        request = self.context.get('request')
+        user = getattr(request, 'user', None) if request else None
+        return user_can_editar_ficha(obj, user)
 
     def get_can_retroceder(self, obj):
         request = self.context.get('request')
@@ -228,6 +263,16 @@ class SipoFichaIngresoDetailSerializer(serializers.ModelSerializer):
 
     def get_accion_aprobar_label(self, obj):
         return accion_aprobar_label(obj.estado)
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get('request')
+        user = getattr(request, 'user', None) if request else None
+        if user and _is_supervisor(user):
+            for key in FICHA_DETAIL_RRHH_FIELDS:
+                data.pop(key, None)
+            data['vista_supervisor'] = True
+        return data
 
     def get_afp(self, obj):
         return resolve_catalog_label('afp', obj.afp)
@@ -337,6 +382,9 @@ FICHA_REQUIRED_TEXT_FIELDS = (
     'fecha_ingreso',
     'correo_jefe_directo',
     'correo_admin_obra',
+    'correo_colaborador',
+    'jefe_user_id',
+    'jefe_nombre',
     'nombres',
     'apellido_paterno',
     'apellido_materno',
@@ -371,6 +419,22 @@ FICHA_REQUIRED_TEXT_FIELDS = (
 class SipoFichaIngresoWriteSerializer(serializers.Serializer):
     """Validación estricta de campos obligatorios de ficha de ingreso."""
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.context.get('solo_supervisor'):
+            return
+        for name in (
+            'razon_social_id', 'obra', 'centro_costo_id', 'centro_costo_nombre',
+            'correo_jefe_directo', 'correo_admin_obra', 'jefe_user_id', 'jefe_nombre',
+            'cuenta_gasto',
+        ):
+            field = self.fields.get(name)
+            if field is None:
+                continue
+            field.required = False
+            field.allow_blank = True
+            field.allow_null = True
+
     razon_social_id = _ficha_req_char(50)
     obra = _ficha_req_char(255)
     centro_costo_id = _ficha_req_char(100)
@@ -379,34 +443,38 @@ class SipoFichaIngresoWriteSerializer(serializers.Serializer):
     fecha_ingreso = serializers.CharField(required=True, allow_blank=False, allow_null=False)
     correo_jefe_directo = serializers.EmailField(required=True, allow_blank=False, allow_null=False)
     correo_admin_obra = serializers.EmailField(required=True, allow_blank=False, allow_null=False)
-    nombres = _ficha_req_char(150)
-    apellido_paterno = _ficha_req_char(100)
-    apellido_materno = _ficha_req_char(100)
-    rut = _ficha_req_char(20)
-    genero = _ficha_req_char(30)
-    tratamiento = _ficha_req_char(20)
-    fecha_nacimiento = serializers.CharField(required=True, allow_blank=False, allow_null=False)
-    edad = serializers.CharField(required=True, allow_blank=False, allow_null=False)
-    nacionalidad = _ficha_req_char(80)
+    correo_colaborador = serializers.EmailField(required=True, allow_blank=False, allow_null=False)
+    jefe_user_id = _ficha_req_char(50)
+    jefe_nombre = _ficha_req_char(255)
+    jefe_correo = _ficha_opt_char(150)
+    nombres = _ficha_opt_char(150)
+    apellido_paterno = _ficha_opt_char(100)
+    apellido_materno = _ficha_opt_char(100)
+    rut = _ficha_opt_char(20)
+    genero = _ficha_opt_char(30)
+    tratamiento = _ficha_opt_char(20)
+    fecha_nacimiento = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    edad = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    nacionalidad = _ficha_opt_char(80)
     nacionalidad_ext = _ficha_opt_char(100)
-    pais_nacimiento = _ficha_req_char(100)
-    region_nacimiento = _ficha_req_char(100)
-    afp = _ficha_req_char(100)
-    isapre_fonasa = _ficha_req_char(100)
-    jubilado = serializers.CharField(required=True, allow_blank=False, allow_null=False)
-    estado_civil = _ficha_req_char(50)
-    telefono = _ficha_req_char(30)
-    domicilio = _ficha_req_char(255)
-    numero_direccion = _ficha_req_char(30)
+    pais_nacimiento = _ficha_opt_char(100)
+    region_nacimiento = _ficha_opt_char(100)
+    afp = _ficha_opt_char(100)
+    isapre_fonasa = _ficha_opt_char(100)
+    jubilado = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    estado_civil = _ficha_opt_char(50)
+    telefono = _ficha_opt_char(30)
+    domicilio = _ficha_opt_char(255)
+    numero_direccion = _ficha_opt_char(30)
     villa = _ficha_opt_char(150)
     num_depto = _ficha_opt_char(30)
-    region = _ficha_req_char(100)
-    ciudad = _ficha_req_char(100)
-    comuna = _ficha_req_char(100)
-    email_personal = serializers.EmailField(required=True, allow_blank=False, allow_null=False)
-    metodo_pago = _ficha_req_char(50)
-    banco = _ficha_req_char(100)
-    numero_cuenta = _ficha_req_char(50)
+    region = _ficha_opt_char(100)
+    ciudad = _ficha_opt_char(100)
+    comuna = _ficha_opt_char(100)
+    email_personal = serializers.EmailField(required=False, allow_blank=True, allow_null=True)
+    metodo_pago = _ficha_opt_char(50)
+    banco = _ficha_opt_char(100)
+    numero_cuenta = _ficha_opt_char(50)
     sueldo_liquido = serializers.CharField(required=True, allow_blank=False, allow_null=False)
     cuenta_gasto = _ficha_req_char(150)
     tipo_contrato = _ficha_req_char(50)
@@ -420,20 +488,43 @@ class SipoFichaIngresoWriteSerializer(serializers.Serializer):
         from rest_framework.exceptions import ValidationError
 
         errors = {}
+        solo_rrhh = bool(self.context.get('solo_rrhh'))
+        solo_supervisor = bool(self.context.get('solo_supervisor'))
+        personales = {
+            'nombres', 'apellido_paterno', 'apellido_materno', 'rut', 'genero',
+            'tratamiento', 'fecha_nacimiento', 'edad', 'nacionalidad',
+            'pais_nacimiento', 'region_nacimiento', 'afp', 'isapre_fonasa',
+            'estado_civil', 'telefono', 'domicilio', 'numero_direccion',
+            'region', 'ciudad', 'comuna', 'email_personal', 'metodo_pago',
+            'banco', 'numero_cuenta',
+        }
+        rrhh = {
+            'razon_social_id', 'obra', 'centro_costo_id', 'centro_costo_nombre',
+            'correo_jefe_directo', 'correo_admin_obra', 'jefe_user_id', 'jefe_nombre',
+            'cuenta_gasto',
+        }
+        omitir = set()
+        if solo_supervisor:
+            omitir = personales | rrhh
+        elif solo_rrhh:
+            omitir = set(personales)
         for key, value in list(attrs.items()):
             if isinstance(value, str):
                 stripped = value.strip()
                 attrs[key] = stripped
-                if key in FICHA_REQUIRED_TEXT_FIELDS and stripped == '':
+                if key in FICHA_REQUIRED_TEXT_FIELDS and key not in omitir and stripped == '':
                     errors[key] = ['Este campo no puede estar vacío ni contener solo espacios.']
 
-        for key in FICHA_REQUIRED_TEXT_FIELDS:
+        campos = [key for key in FICHA_REQUIRED_TEXT_FIELDS if key not in omitir]
+        for key in campos:
             val = attrs.get(key)
             if val is None or (isinstance(val, str) and val.strip() == ''):
                 errors[key] = ['Este campo es obligatorio.']
 
         jub = attrs.get('jubilado')
-        if jub is None or (isinstance(jub, str) and jub.strip() == ''):
+        if not solo_rrhh and not solo_supervisor and (
+            jub is None or (isinstance(jub, str) and jub.strip() == '')
+        ):
             errors['jubilado'] = ['Este campo es obligatorio.']
 
         nac = (attrs.get('nacionalidad') or '').strip()
@@ -450,6 +541,16 @@ class SipoFichaIngresoWriteSerializer(serializers.Serializer):
                 errors['termino_contrato'] = ['Debe indicar el HITO.']
             if not (attrs.get('fecha_termino_ito') or '').strip():
                 errors['fecha_termino_ito'] = ['Debe indicar la fecha de término HITO.']
+
+        from sipo.constants import SUELDO_LIQUIDO_MINIMO
+        from sipo.services.candidato_validaciones import parse_sueldo
+
+        liquido = parse_sueldo(attrs.get('sueldo_liquido'))
+        if not (solo_supervisor and not str(attrs.get('sueldo_liquido') or '').strip()) and liquido < SUELDO_LIQUIDO_MINIMO:
+            fmt = f'{SUELDO_LIQUIDO_MINIMO:,}'.replace(',', '.')
+            errors['sueldo_liquido'] = [
+                f'El sueldo líquido no puede ser menor a ${fmt} CLP.'
+            ]
 
         if errors:
             raise ValidationError(errors)

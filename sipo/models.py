@@ -186,6 +186,15 @@ class SipoCandidatoObra(models.Model):
     cf_rrhh_sip_obra_candidato_nomcar = models.CharField(
         max_length=100, db_column='cf_rrhh_sip_obra_candidato_nomcar', blank=True, null=True
     )
+    cf_rrhh_sip_obra_candidato_jefe_user_id = models.CharField(
+        max_length=50, db_column='cf_rrhh_sip_obra_candidato_jefe_user_id', blank=True, null=True
+    )
+    cf_rrhh_sip_obra_candidato_jefe_nombre = models.CharField(
+        max_length=255, db_column='cf_rrhh_sip_obra_candidato_jefe_nombre', blank=True, null=True
+    )
+    cf_rrhh_sip_obra_candidato_jefe_correo = models.CharField(
+        max_length=150, db_column='cf_rrhh_sip_obra_candidato_jefe_correo', blank=True, null=True
+    )
     cf_rrhh_sip_obra_candidato_horario_trabajo = models.CharField(
         max_length=100, db_column='cf_rrhh_sip_obra_candidato_horario_trabajo', blank=True, null=True
     )
@@ -315,3 +324,5 @@ class SipoObraLog(models.Model):
 
 from .models_ficha import SipoFichaIngreso  # noqa: E402,F401
 from .models_historial import SipoSolicitudHistorial  # noqa: E402,F401
+from .models_portal import SipoCandidatoAcceso  # noqa: E402,F401
+from .models_ficha_acceso import SipoFichaAcceso  # noqa: E402,F401

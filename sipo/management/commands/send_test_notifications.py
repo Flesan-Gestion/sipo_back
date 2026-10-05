@@ -4,12 +4,18 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from sipo.services.notifications import (
+    SipoEmailMessage,
+    _base_context,
+    _qr_png,
+    _render,
+    _subject_prefix,
     send_email_builder_ok,
     send_email_contrato_disponible,
     send_email_error_builder,
     send_email_obra_finalizada,
     send_email_paso_revision,
     send_email_rechazo_documentos,
+    send_sipo_email,
 )
 
 
@@ -40,13 +46,45 @@ def _demo_candidato() -> SimpleNamespace:
     )
 
 
+def _demo_invitacion(to: str) -> dict:
+    import base64
+
+    url = 'http://localhost:5173/portal-candidato/demo-preview'
+    png = _qr_png(url)
+    html = _render(
+        'emails/invitacion_candidato_sip.html',
+        _base_context(
+            header_img='NE_Solicitud_de_incorporacion.jpg',
+            portal_url=url,
+            qr_base64=base64.b64encode(png).decode('ascii'),
+            cargo='Maestro',
+            empresa='Constructora Demo SIPO V2',
+            obra='Obra Demo',
+        ),
+    )
+    return send_sipo_email(
+        SipoEmailMessage(
+            subject=f'{_subject_prefix()} [SIP OBRA] Completa tu ficha de ingreso',
+            html_body=html,
+            intended_recipients=[to],
+            notification_key='invitacion_colaborador',
+            inline_images=[('qr_colaborador', png)],
+        )
+    )
+
+
 class Command(BaseCommand):
     help = (
-        'Envía los 6 correos activos de SIPO Obra (datos demo) '
-        'para revisión visual. Respeta SIP_EMAIL_FORCE_OVERRIDE.'
+        'Envía todos los correos de SIPO (datos demo) a un solo destinatario.'
     )
 
     def add_arguments(self, parser):
+        parser.add_argument(
+            '--to',
+            type=str,
+            default='martin.norambuena@flesan.cl',
+            help='Destinatario de la prueba',
+        )
         parser.add_argument(
             '--sip-id',
             type=int,
@@ -59,11 +97,15 @@ class Command(BaseCommand):
             default='',
             help=(
                 'Clave(s) separadas por coma: revision,error_builder,finalizada,'
-                'contrato,builder_ok,rechazo_docs'
+                'contrato,builder_ok,rechazo_docs,invitacion'
             ),
         )
 
     def handle(self, *args, **options):
+        to = (options['to'] or '').strip().lower()
+        settings.SIP_EMAIL_ENABLED = True
+        settings.SIP_EMAIL_FORCE_OVERRIDE = True
+        settings.SIP_EMAIL_TEST_OVERRIDE = to
         obra = _demo_obra(options['sip_id'])
         candidato = _demo_candidato()
         only = {
@@ -113,6 +155,11 @@ class Command(BaseCommand):
                     candidato,
                     razones='Cédula ilegible / contrato incompleto (DEMO)',
                 ),
+            ),
+            (
+                'invitacion',
+                'Invitación ficha de ingreso',
+                lambda: _demo_invitacion(to),
             ),
         ]
 

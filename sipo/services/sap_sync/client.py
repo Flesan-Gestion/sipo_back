@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
+from datetime import datetime, timezone as dt_timezone
 from typing import Any
 
 import requests
@@ -11,6 +12,11 @@ from django.utils import timezone
 from ...models import SipoObraLog
 
 _oauth_header_cache: str | None = None
+
+
+def _now_chile_mysql() -> datetime:
+    """Wall-clock Chile para DATETIME MySQL (paridad NOW() legado; Django USE_TZ persiste UTC)."""
+    return timezone.localtime().replace(tzinfo=dt_timezone.utc)
 
 
 def clear_sap_auth_cache() -> None:
@@ -126,5 +132,5 @@ def write_sap_log(*, sip_id: int, user_id: str, log_type: str, result: dict[str,
         log_type=log_type,
         log_estado=status,
         log_data=message[:2000],
-        log_date=timezone.now(),
+        log_date=_now_chile_mysql(),
     )

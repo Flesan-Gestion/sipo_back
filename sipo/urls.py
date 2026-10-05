@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views_ficha import (
+    SipoFichaAccesoView,
     SipoFichaAdjuntoView,
     SipoFichaAprobarView,
     SipoFichaDetailView,
@@ -18,6 +19,7 @@ from .views_users import (
 from .views_excel import SipoExportarExcelView
 from .views_cargos_horarios import SipoConfigCargosView, SipoConfigEmpresasView, SipoConfigHorariosView
 from .views_maestros import SipoCentrosCostoView, SipoRazonesSocialesView
+from .views_portal import SipoCandidatoAccesoView, SipoPortalCandidatoView
 from .views import (
     SipoCandidatoDetailView,
     SipoCandidatoDocumentoView,
@@ -34,6 +36,7 @@ from .views import (
     SipoObraCancelView,
     SipoObraDetailView,
     SipoObraListView,
+    SipoPersonalPlantaView,
     SipoReintegrarDetalleView,
     SipoReintegrarListView,
     SipoAprobarContratacionView,
@@ -48,6 +51,7 @@ urlpatterns = [
     path('sipo/perfiles/', SipoPerfilesListView.as_view(), name='sipo-perfiles'),
     path('sipo/me/alcance/', SipoMiAlcanceView.as_view(), name='sipo-me-alcance'),
     path('sipo/fichas/', SipoFichasListCreateView.as_view(), name='sipo-fichas'),
+    path('sipo/fichas/<int:ficha_id>/acceso/', SipoFichaAccesoView.as_view(), name='sipo-ficha-acceso'),
     path('sipo/fichas/<int:ficha_id>/', SipoFichaDetailView.as_view(), name='sipo-ficha-detail'),
     path('sipo/fichas/<int:ficha_id>/pdf/', SipoFichaPdfView.as_view(), name='sipo-ficha-pdf'),
     path(
@@ -69,6 +73,11 @@ urlpatterns = [
         'sipo/fichas/<int:ficha_id>/adjuntos/<str:doc_type>/',
         SipoFichaAdjuntoView.as_view(),
         name='sipo-ficha-adjunto',
+    ),
+    path(
+        'sipo/maestros/personal-planta/',
+        SipoPersonalPlantaView.as_view(),
+        name='sipo-personal-planta',
     ),
     path('sipo/maestros/', SipoMaestrosView.as_view(), name='sipo-maestros'),
     path(
@@ -111,6 +120,11 @@ urlpatterns = [
         SipoValidarRutView.as_view(),
         name='sipo-validar-rut',
     ),
+    path(
+        'sipo/public/ficha/<uuid:token>/',
+        SipoPortalCandidatoView.as_view(),
+        name='sipo-portal-ficha',
+    ),
     path('sipo/', SipoObraListView.as_view(), name='sipo-list'),
     path('sipo/exportar-excel/', SipoExportarExcelView.as_view(), name='sipo-exportar-excel'),
     path('sipo/config/empresas/', SipoConfigEmpresasView.as_view(), name='sipo-config-empresas'),
@@ -147,6 +161,11 @@ urlpatterns = [
         'sipo/<int:sip_id>/candidatos/<str:candidato_id>/documento/<str:doc_type>/',
         SipoCandidatoDocumentoView.as_view(),
         name='sipo-candidato-documento',
+    ),
+    path(
+        'sipo/<int:sip_id>/candidatos/<str:candidato_id>/acceso/',
+        SipoCandidatoAccesoView.as_view(),
+        name='sipo-candidato-acceso',
     ),
     path(
         'sipo/<int:sip_id>/candidatos/<str:candidato_id>/',

@@ -11,3 +11,4 @@ requests
 google-auth
 openpyxl
 reportlab
+segno

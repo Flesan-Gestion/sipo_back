@@ -2,6 +2,7 @@ SIPO_ID_CUTOFF = 1159
 
 SIPO_ROL_ADMIN = 1
 SIPO_ROL_RRHH = 2
+SIPO_ROL_SUPERVISOR = 4
 
 SIPO_STATUS_EN_ESPERA = 6
 SIPO_STATUS_EN_REVISION = 7
@@ -69,6 +70,10 @@ SIPO_MAX_CANDIDATOS = 5
 # Regla Chivato Huechún: colación/movilización forzadas a $1
 CC_CHIVATO_HUECHUN = 'CFMCFM130048'
 COL_MOV_CHIVATO_HUECHUN = 1
+
+# Remuneraciones obra (FASE 1)
+IMM_ACTUAL = 553_553  # piso sueldo base
+SUELDO_LIQUIDO_MINIMO = 585_000  # piso sueldo líquido pactado
 
 # Segregación país / Grupo 2 (sap_maestro_empresa_dep_un_cc.external_code_pais)
 EXTERNAL_CODE_PAIS_CHILE = '10000001'

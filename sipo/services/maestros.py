@@ -211,6 +211,28 @@ def get_cargos_by_empresa(rut: str | None) -> list[dict]:
         return []
 
 
+def get_cargos_catalogo() -> list[dict]:
+    try:
+        with connections[SIPO_OBRA_DB].cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT TRIM(cargo)
+                FROM cf_rrhh_sip_obra_cargos
+                WHERE COALESCE(TRIM(cargo), '') <> ''
+                GROUP BY TRIM(cargo)
+                ORDER BY TRIM(cargo)
+                """
+            )
+            return [
+                {'external_code': nombre, 'nombre': nombre}
+                for (nombre,) in cursor.fetchall()
+                if nombre
+            ]
+    except (OperationalError, ProgrammingError, KeyError) as exc:
+        logger.warning('No se pudieron cargar cargos: %s', exc)
+        return []
+
+
 def get_ubicaciones_sap(rut: str | None = None) -> list[dict]:
     """Ubicaciones desde flesan_rrhh.sap_maestro_ubicacion (DW), filtradas por empresa."""
     rut_norm = (rut or '').strip()

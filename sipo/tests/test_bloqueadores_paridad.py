@@ -56,6 +56,37 @@ class Sueldo962Tests(SimpleTestCase):
         self.assertEqual(piso, 962_000)
         self.assertIn('962.000', msg)
 
+    def test_piso_liquido_estandar_585000(self):
+        from sipo.constants import SUELDO_LIQUIDO_MINIMO
+
+        ok, piso, msg = resolve_sueldo_minimo(
+            sueldo='584999',
+            cargo='ANALISTA',
+            horario='PHT00001',
+        )
+        self.assertFalse(ok)
+        self.assertEqual(piso, SUELDO_LIQUIDO_MINIMO)
+        self.assertIn('585.000', msg)
+
+        ok2, piso2, _ = resolve_sueldo_minimo(
+            sueldo='585000',
+            cargo='ANALISTA',
+            horario='PHT00001',
+        )
+        self.assertTrue(ok2)
+        self.assertEqual(piso2, SUELDO_LIQUIDO_MINIMO)
+
+
+class SueldoBaseImmTests(SimpleTestCase):
+    def test_apply_sueldo_base_piso_imm(self):
+        from sipo.constants import IMM_ACTUAL
+        from sipo.services.candidato_validaciones import apply_sueldo_base_piso
+
+        self.assertEqual(apply_sueldo_base_piso(500_000), IMM_ACTUAL)
+        self.assertEqual(apply_sueldo_base_piso(IMM_ACTUAL), IMM_ACTUAL)
+        self.assertEqual(apply_sueldo_base_piso(700_000), 700_000)
+        self.assertEqual(apply_sueldo_base_piso(0), 0)
+
 
 class BonoMineriaTests(SimpleTestCase):
     def test_bono_mineria_retorna_entero(self):
@@ -156,6 +187,20 @@ class SapGenderAndPositionTests(SimpleTestCase):
         payload = build_position_payload(ctx)
         self.assertEqual(payload['cust_employmentType'], 'GOV')
         self.assertEqual(payload['code'], '20200007')
+
+    def test_empjob_incluye_manager_id(self):
+        from sipo.services.sap_sync.sap_builder import build_emp_job_payload
+
+        candidato = MagicMock()
+        candidato.cf_rrhh_sip_obra_user_id = '200007'
+        candidato.cf_rrhh_sip_obra_candidato_fecha_ingreso = '2026-09-14'
+        candidato.cf_rrhh_sip_obra_candidato_tipo_contrato = 'Plazo Fijo'
+        candidato.cf_rrhh_sip_obra_candidato_jefe_user_id = '109076'
+        obra = MagicMock()
+        obra.cf_rrhh_sip_rut = 'DVF'
+        ctx = SapSyncContext(candidato=candidato, obra=obra)
+        payload = build_emp_job_payload(ctx)
+        self.assertEqual(payload['managerId'], '109076')
 
     def test_national_id_formato_sap_xx_xxx_xxx_z(self):
         from sipo.services.candidato_validaciones import format_rut_sap_national_id

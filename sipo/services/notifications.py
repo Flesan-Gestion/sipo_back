@@ -32,6 +32,7 @@ class SipoEmailMessage:
     bcc: list[str] = field(default_factory=list)
     notification_key: str = ''
     from_name: str | None = None
+    inline_images: list[tuple[str, bytes]] = field(default_factory=list)
 
 
 def _email_enabled() -> bool:
@@ -188,6 +189,15 @@ def send_sipo_email(message: SipoEmailMessage) -> dict[str, Any]:
             bcc=bcc,
         )
         msg.attach_alternative(html_body, 'text/html')
+        if message.inline_images:
+            from email.mime.image import MIMEImage
+
+            msg.mixed_subtype = 'related'
+            for cid, payload in message.inline_images:
+                img = MIMEImage(payload, _subtype='png')
+                img.add_header('Content-ID', f'<{cid}>')
+                img.add_header('Content-Disposition', 'inline', filename=f'{cid}.png')
+                msg.attach(img)
         msg.send(fail_silently=False)
         logger.info(
             'notifications OK key=%s to=%s intended=%s subject=%s',
@@ -229,7 +239,7 @@ def send_email_paso_revision(
     html = _render(
         'emails/obra_paso_revision.html',
         _base_context(
-            header_img='h_sip_nsel1.png',
+            header_img='NE_Colaborador_Seleccionado.jpg',
             total_candidatos=len(candidatos),
             empresa=empresa,
             un=un,
@@ -255,7 +265,7 @@ def send_email_error_builder(
     """§3.2 — TO: lista fija RRHH/Admin."""
     html = _render(
         'emails/obra_error_builder.html',
-        _base_context(header_img='', mensaje_error=mensaje_error),
+        _base_context(header_img='NF_Proceso_de_Seleccion_SIP.jpg', mensaje_error=mensaje_error),
     )
     return send_sipo_email(
         SipoEmailMessage(
@@ -281,7 +291,7 @@ def send_email_obra_finalizada(
     html = _render(
         'emails/obra_finalizada.html',
         _base_context(
-            header_img='h_sip_nsel1.png',
+            header_img='NA_Solicitud_de_incoporacion.jpg',
             sip_id=obra.cf_rrhh_sip_id,
             total_contratos=total_contratos,
             empresa=empresa,
@@ -308,7 +318,7 @@ def send_email_contrato_disponible(
     html = _render(
         'emails/obra_contrato.html',
         _base_context(
-            header_img='h_sip_nsel1.png',
+            header_img='NE_Proceso_de_envio_de_documento.jpg',
             nombre_candidato=_candidato_nombre(candidato),
         ),
     )
@@ -330,7 +340,7 @@ def send_email_builder_ok(
     html = _render(
         'emails/obra_builder_ok.html',
         _base_context(
-            header_img='h_sip_nsel1.png',
+            header_img='NF_Proceso_de_Seleccion_SIP.jpg',
             nombre_candidato=_candidato_nombre(candidato),
         ),
     )
@@ -354,7 +364,7 @@ def send_email_rechazo_documentos(
     html = _render(
         'emails/obra_rechazo_documentos.html',
         _base_context(
-            header_img='h_nap_sip.png',
+            header_img='Rechazo_Proc_seleccion.jpg',
             nombre_candidato=_candidato_nombre(candidato),
             razones=(razones or '').strip() or '—',
             portal_url=_portal_obra_url(obra.cf_rrhh_sip_id),
@@ -433,3 +443,52 @@ def collect_integration_errors(
                         f'{entity.get("message") or status}'
                     )
     return errores
+
+
+def _qr_png(url: str) -> bytes:
+    import io
+
+    import segno
+
+    buffer = io.BytesIO()
+    segno.make(url, error='m').save(buffer, kind='png', scale=6, border=2)
+    return buffer.getvalue()
+
+
+def send_email_invitacion_colaborador(ficha_id: int) -> dict[str, Any]:
+    """Enlace y QR al correo_colaborador al guardar la ficha del supervisor."""
+    import base64
+
+    from ..models_ficha import SipoFichaIngreso
+    from .ficha_portal import emitir_acceso_ficha
+
+    ficha = SipoFichaIngreso.objects.filter(pk=ficha_id).first()
+    if not ficha:
+        return {'sent': False, 'skipped': True, 'reason': 'ficha_no_encontrada'}
+
+    origin = getattr(settings, 'SIPO_PUBLIC_ORIGIN', '') or 'http://localhost:5173'
+    acceso = emitir_acceso_ficha(ficha_id=ficha.id, front_origin=origin)
+    url = acceso['url']
+    png = _qr_png(url)
+    qr_b64 = base64.b64encode(png).decode('ascii')
+    html = _render(
+        'emails/invitacion_candidato_sip.html',
+        _base_context(
+            header_img='NE_Solicitud_de_incorporacion.jpg',
+            portal_url=url,
+            token=acceso['token'],
+            qr_base64=qr_b64,
+            cargo=ficha.cargo or '',
+            empresa=ficha.razon_social_nombre or '',
+            obra=ficha.obra or '',
+        ),
+    )
+    return send_sipo_email(
+        SipoEmailMessage(
+            subject=f'{_subject_prefix()} [SIP OBRA] Completa tu ficha de ingreso',
+            html_body=html,
+            intended_recipients=_unique_emails(ficha.correo_colaborador),
+            notification_key='invitacion_colaborador',
+            inline_images=[('qr_colaborador', png)],
+        )
+    )

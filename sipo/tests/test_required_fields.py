@@ -17,6 +17,7 @@ def _candidato_base(**overrides):
         'cf_rrhh_sip_obra_candidato_rut': '11.111.111-1',
         'cf_rrhh_sip_obra_candidato_nombre': 'Martin',
         'cf_rrhh_sip_obra_candidato_ap': 'Norambuena',
+        'cf_rrhh_sip_obra_candidato_am': 'Herrera',
         'cf_rrhh_sip_obra_candidato_genero': 'M',
         'cf_rrhh_sip_obra_candidato_fecha_nacimiento': '1990-01-15',
         'cf_rrhh_sip_obra_candidato_estado_civil': 'Soltero',
@@ -37,6 +38,9 @@ def _candidato_base(**overrides):
         'cf_rrhh_sip_obra_candidato_nom_salud': '005',
         'cf_rrhh_sip_obra_candidato_jubilado': 'No',
         'cf_rrhh_sip_obra_candidato_nomcar': 'Analista',
+        'cf_rrhh_sip_obra_candidato_jefe_user_id': '109076',
+        'cf_rrhh_sip_obra_candidato_jefe_nombre': 'Jefe Demo',
+        'cf_rrhh_sip_obra_candidato_jefe_correo': 'jefe@flesan.cl',
         'cf_rrhh_sip_obra_candidato_horario_trabajo': 'L-V 08-17',
         'cf_rrhh_sip_obra_candidato_sueldo': '650000',
         'cf_rrhh_sip_obra_candidato_cuenta_gasto': 'CG001',
@@ -61,6 +65,10 @@ def _ficha_base(**overrides):
         'fecha_ingreso': '2026-09-04',
         'correo_jefe_directo': 'jefe@flesan.cl',
         'correo_admin_obra': 'adminobra@flesan.cl',
+        'correo_colaborador': 'colaborador@flesan.cl',
+        'jefe_user_id': '109076',
+        'jefe_nombre': 'Jefe Demo',
+        'jefe_correo': 'jefe.planta@flesan.cl',
         'nombres': 'Martin Alonso',
         'apellido_paterno': 'Norambuena',
         'apellido_materno': 'Herrera',
@@ -133,6 +141,13 @@ class SipoCandidatoWriteRequiredTests(SimpleTestCase):
         self.assertFalse(ser.is_valid())
         self.assertIn('cf_rrhh_sip_obra_candidato_nombre', ser.errors)
 
+    def test_segundo_apellido_required(self):
+        data = _candidato_base()
+        del data['cf_rrhh_sip_obra_candidato_am']
+        ser = SipoCandidatoWriteSerializer(data=data)
+        self.assertFalse(ser.is_valid())
+        self.assertIn('cf_rrhh_sip_obra_candidato_am', ser.errors)
+
     @patch(
         'sipo.services.candidato_validaciones.validate_candidato_negocio',
         side_effect=lambda data, **kw: data,
@@ -172,3 +187,12 @@ class SipoFichaWriteRequiredTests(SimpleTestCase):
         )
         self.assertFalse(ser.is_valid())
         self.assertIn('nacionalidad_ext', ser.errors)
+
+    def test_sueldo_liquido_minimo_585000(self):
+        ser = SipoFichaIngresoWriteSerializer(data=_ficha_base(sueldo_liquido='584999'))
+        self.assertFalse(ser.is_valid())
+        self.assertIn('sueldo_liquido', ser.errors)
+
+    def test_sueldo_liquido_igual_minimo_ok(self):
+        ser = SipoFichaIngresoWriteSerializer(data=_ficha_base(sueldo_liquido='585000'))
+        self.assertTrue(ser.is_valid(), ser.errors)

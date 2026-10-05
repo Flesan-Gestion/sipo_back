@@ -2,6 +2,8 @@ from django.db import models
 
 
 class SipoFichaIngreso(models.Model):
+    ESTADO_BORRADOR_SUPERVISOR = 'BORRADOR_SUPERVISOR'
+    ESTADO_PENDIENTE_DATOS_COLABORADOR = 'PENDIENTE_DATOS_COLABORADOR'
     ESTADO_PENDIENTE_JEFE_TERRENO = 'PENDIENTE_JEFE_TERRENO'
     ESTADO_PENDIENTE_JEFE = ESTADO_PENDIENTE_JEFE_TERRENO
     ESTADO_PENDIENTE_ADMIN = 'PENDIENTE_ADMIN'
@@ -10,13 +12,17 @@ class SipoFichaIngreso(models.Model):
     ESTADO_RECHAZADA = 'RECHAZADA'
 
     ESTADO_CHOICES = (
-        (ESTADO_PENDIENTE_JEFE_TERRENO, 'Pendiente Jefe de Terreno'),
+        (ESTADO_BORRADOR_SUPERVISOR, 'Borrador supervisor'),
+        (ESTADO_PENDIENTE_DATOS_COLABORADOR, 'Pendiente colaborador'),
         (ESTADO_PENDIENTE_RRHH, 'Pendiente RRHH'),
+        (ESTADO_PENDIENTE_JEFE_TERRENO, 'Pendiente Jefe de Terreno'),
         (ESTADO_APROBADA, 'Aprobada'),
         (ESTADO_RECHAZADA, 'Rechazada'),
     )
 
     ESTADO_LABELS = {
+        ESTADO_BORRADOR_SUPERVISOR: 'Borrador supervisor',
+        ESTADO_PENDIENTE_DATOS_COLABORADOR: 'Pendiente colaborador',
         ESTADO_PENDIENTE_JEFE_TERRENO: 'Pendiente Jefe de Terreno',
         'PENDIENTE_JEFE': 'Pendiente Jefe de Terreno',
         ESTADO_PENDIENTE_ADMIN: 'Pendiente RRHH',
@@ -35,6 +41,10 @@ class SipoFichaIngreso(models.Model):
     fecha_ingreso = models.DateField(blank=True, null=True)
     correo_jefe_directo = models.EmailField(blank=True, null=True)
     correo_admin_obra = models.EmailField(blank=True, null=True)
+    correo_colaborador = models.EmailField(blank=True, null=True)
+    jefe_user_id = models.CharField(max_length=50, blank=True, null=True)
+    jefe_nombre = models.CharField(max_length=255, blank=True, null=True)
+    jefe_correo = models.CharField(max_length=150, blank=True, null=True)
 
     # Sección 2 — Colaborador
     nombres = models.CharField(max_length=150, blank=True, null=True)

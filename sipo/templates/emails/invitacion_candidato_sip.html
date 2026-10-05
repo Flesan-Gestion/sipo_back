@@ -1,0 +1,33 @@
+{% extends "emails/base_sip_obra.html" %}
+{% block body %}
+<tr>
+  <td style="padding:0 60px;">
+    <span style="font-weight:bold;">Estimado/a colaborador/a,</span>
+  </td>
+</tr>
+<tr><td height="10" style="height:10px;font-size:0;line-height:0;">&nbsp;</td></tr>
+<tr>
+  <td style="padding:0 60px;">
+    <span style="text-align:justify;">
+      Debes completar tu ficha de ingreso de personal. Puedes hacerlo desde el computador o escaneando el código QR con tu teléfono.
+    </span>
+  </td>
+</tr>
+<tr><td height="10" style="height:10px;font-size:0;line-height:0;">&nbsp;</td></tr>
+<tr>
+  <td style="padding:0 60px;color:#4d4d4d;">
+    {% if cargo %}<div><strong>Cargo:</strong> {{ cargo }}</div>{% endif %}
+  </td>
+</tr>
+<tr><td height="24" style="height:24px;line-height:24px;font-size:14px;">&nbsp;<br>&nbsp;</td></tr>
+<tr>
+  <td style="padding:8px 60px 16px;text-align:center;">
+    <a href="{{ portal_url }}" style="background-color:#FC0404;color:white;text-decoration:none;padding:10px 15px;border-radius:10px;text-align:center;display:inline-block;min-width:300px;">COMPLETAR FICHA</a>
+  </td>
+</tr>
+<tr>
+  <td style="padding:8px 60px 0;text-align:center;">
+    <img src="cid:qr_colaborador" alt="Código QR" width="180" height="180" border="0" style="display:block;margin:0 auto;border:0;" data-qr="data:image/png;base64,{{ qr_base64 }}">
+  </td>
+</tr>
+{% endblock %}

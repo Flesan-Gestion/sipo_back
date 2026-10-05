@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 
 from utils.responses import ApiResponseSuccess
 
+from .constants import SIPO_ROL_SUPERVISOR
 from .permissions import IsSipoAuthenticated
 from .serializers_ficha import (
     SipoFichaIngresoDetailSerializer,
@@ -99,12 +100,21 @@ class SipoFichasListCreateView(APIView):
 
     def post(self, request):
         data = _multipart_data(request)
+        solo_rrhh = str(data.get('solo_rrhh') or '').lower() in ('1', 'true', 'si')
+        solo_supervisor = str(data.get('solo_supervisor') or '').lower() in ('1', 'true', 'si')
+        if int(getattr(request.user, 'sip_rol_id', -1) or -1) == SIPO_ROL_SUPERVISOR:
+            solo_supervisor = True
+            data = {**data, 'solo_supervisor': '1'}
         rs_cc = SipoFichaRsCcWriteSerializer(data=data)
         rs_cc.is_valid(raise_exception=True)
-        write_ser = SipoFichaIngresoWriteSerializer(data=data)
+        write_ser = SipoFichaIngresoWriteSerializer(
+            data=data,
+            context={'solo_rrhh': solo_rrhh, 'solo_supervisor': solo_supervisor},
+        )
         write_ser.is_valid(raise_exception=True)
         files = request.FILES
-        _assert_ficha_docs_present(files=files, ficha=None)
+        if not solo_rrhh and not solo_supervisor:
+            _assert_ficha_docs_present(files=files, ficha=None)
         ficha = create_ficha(data=data, files=files, user=request.user)
         payload = SipoFichaIngresoDetailSerializer(ficha, context={'request': request}).data
         return ApiResponseSuccess(payload).response()
@@ -135,11 +145,19 @@ class SipoFichaDetailView(APIView):
             )
             serializer.is_valid(raise_exception=True)
         files = request.FILES
-        # Guardado completo desde formulario: validar obligatorios + docs.
-        if 'rut' in data or 'nombres' in data:
-            write_ser = SipoFichaIngresoWriteSerializer(data=data)
+        solo_rrhh = str(data.get('solo_rrhh') or '').lower() in ('1', 'true', 'si')
+        solo_supervisor = str(data.get('solo_supervisor') or '').lower() in ('1', 'true', 'si')
+        if int(getattr(request.user, 'sip_rol_id', -1) or -1) == SIPO_ROL_SUPERVISOR:
+            solo_supervisor = True
+            data = {**data, 'solo_supervisor': '1'}
+        if solo_supervisor or solo_rrhh or 'rut' in data or 'nombres' in data:
+            write_ser = SipoFichaIngresoWriteSerializer(
+                data=data,
+                context={'solo_rrhh': solo_rrhh, 'solo_supervisor': solo_supervisor},
+            )
             write_ser.is_valid(raise_exception=True)
-            _assert_ficha_docs_present(files=files, ficha=ficha)
+            if not solo_rrhh and not solo_supervisor:
+                _assert_ficha_docs_present(files=files, ficha=ficha)
         ficha = update_ficha(
             ficha_id=ficha_id,
             data=data,
@@ -152,6 +170,18 @@ class SipoFichaDetailView(APIView):
     def delete(self, request, ficha_id: int):
         result = eliminar_ficha(ficha_id=ficha_id, user=request.user)
         return ApiResponseSuccess(result).response()
+
+
+class SipoFichaAccesoView(APIView):
+    permission_classes = [IsSipoAuthenticated]
+
+    def post(self, request, ficha_id: int):
+        get_ficha_for_user(ficha_id, request.user)
+        origin = request.headers.get('Origin') or 'http://localhost:5173'
+        from .services.ficha_portal import emitir_acceso_ficha
+        return ApiResponseSuccess(
+            emitir_acceso_ficha(ficha_id=ficha_id, front_origin=origin)
+        ).response()
 
 
 class SipoFichaPdfView(APIView):
