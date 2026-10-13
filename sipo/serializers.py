@@ -422,7 +422,6 @@ class SipoCandidatoWriteSerializer(serializers.Serializer):
             FONASA_SIN_PLAN,
             requires_valor_plan,
             sanitize_address_data,
-            validate_candidato_negocio,
         )
         from rest_framework.exceptions import ValidationError
 
@@ -442,7 +441,8 @@ class SipoCandidatoWriteSerializer(serializers.Serializer):
         if errors:
             raise ValidationError(errors)
 
-        data = validate_candidato_negocio(dict(attrs))
+        # iBuilder/SAP/RUT activo: create_candidato / update_candidato (con sip_id).
+        data = dict(attrs)
 
         salud = (data.get('cf_rrhh_sip_obra_candidato_nom_salud') or '').strip()
         if requires_valor_plan(salud):

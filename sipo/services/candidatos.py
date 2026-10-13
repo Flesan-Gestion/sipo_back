@@ -132,6 +132,7 @@ def create_candidato(*, sip_id: int, data: dict, user) -> SipoCandidatoObra:
     payload = validate_candidato_negocio(
         payload,
         ubicacion=getattr(obra, 'cf_rrhh_sip_ubicacion', None),
+        sip_id=sip_id,
     )
 
     email = _actor_email(user)
@@ -201,6 +202,7 @@ def update_candidato(*, sip_id: int, candidato_id: str, data: dict, user) -> Sip
     payload = validate_candidato_negocio(
         payload,
         ubicacion=getattr(obra, 'cf_rrhh_sip_ubicacion', None),
+        sip_id=sip_id,
     )
 
     for field, value in payload.items():

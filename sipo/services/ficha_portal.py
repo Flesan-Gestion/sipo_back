@@ -71,6 +71,8 @@ def emitir_acceso_ficha(*, ficha_id: int, front_origin: str) -> dict:
         'qr_base64': qr_svg_base64(url),
         'expira_at': acceso.expira_at.isoformat(),
         'estado': acceso.estado,
+        'created_at': acceso.created_at.isoformat() if acceso.created_at else None,
+        'invitacion_enviada_at': acceso.updated_at.isoformat() if acceso.updated_at else None,
         'cargo': ficha.cargo,
         'empresa': ficha.razon_social_nombre,
         'obra': ficha.obra,

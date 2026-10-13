@@ -133,7 +133,8 @@ class SipoFichaIngresoDetailSerializer(serializers.ModelSerializer):
     isapre_fonasa = serializers.SerializerMethodField()
     estado_civil = serializers.SerializerMethodField()
     banco = serializers.SerializerMethodField()
-    horario = serializers.SerializerMethodField()
+    horario = serializers.CharField(allow_null=True, required=False)
+    horario_label = serializers.SerializerMethodField()
     doc_domicilio_url = serializers.SerializerMethodField()
     doc_titulo_url = serializers.SerializerMethodField()
     doc_afp_url = serializers.SerializerMethodField()
@@ -194,6 +195,7 @@ class SipoFichaIngresoDetailSerializer(serializers.ModelSerializer):
             'fecha_termino_ito',
             'tipo_jornada',
             'horario',
+            'horario_label',
             'observaciones',
             'doc_domicilio',
             'doc_titulo',
@@ -286,7 +288,7 @@ class SipoFichaIngresoDetailSerializer(serializers.ModelSerializer):
     def get_banco(self, obj):
         return resolve_catalog_label('banco', obj.banco)
 
-    def get_horario(self, obj):
+    def get_horario_label(self, obj):
         return resolve_catalog_label('horario', obj.horario)
 
     def _adjunto_api_url(self, obj, doc_type: str):

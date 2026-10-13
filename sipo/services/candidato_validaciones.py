@@ -579,7 +579,12 @@ def validate_fechas_contrato(data: dict) -> dict[str, str]:
     return errors
 
 
-def validate_candidato_negocio(data: dict, *, ubicacion: str | None = None) -> dict:
+def validate_candidato_negocio(
+    data: dict,
+    *,
+    ubicacion: str | None = None,
+    sip_id: int | None = None,
+) -> dict:
     """Valida RUT, blacklist, edad ≥ 18, sueldo y correo SMTP. Devuelve data con RUT normalizado."""
     from .email_validation import validar_correo_smtp
 
@@ -596,7 +601,7 @@ def validate_candidato_negocio(data: dict, *, ubicacion: str | None = None) -> d
         else:
             from .rut_validation import validar_rut_activo
 
-            activo = validar_rut_activo(str(rut_raw))
+            activo = validar_rut_activo(str(rut_raw), sip_id=sip_id)
             if activo.get('activo'):
                 errors['cf_rrhh_sip_obra_candidato_rut'] = activo.get('motivo') or (
                     'El trabajador aún está activo en SAP.'

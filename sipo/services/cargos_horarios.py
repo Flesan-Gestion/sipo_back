@@ -348,6 +348,11 @@ def list_horarios_catalogo_sap() -> list[dict]:
     return items
 
 
+def _is_horario_obsoleto(descripcion: str | None) -> bool:
+    text = (descripcion or '').strip().upper()
+    return 'OBSOLETO' in text or 'OBSOLETA' in text
+
+
 def list_horarios_empresa(empresa_id: str) -> list[dict]:
     rut = _norm_empresa(empresa_id)
     if not rut:
@@ -371,6 +376,12 @@ def list_horarios_empresa(empresa_id: str) -> list[dict]:
                 'horario_trabajo': row.get('horario_trabajo'),
             }
         )
+        descripcion = (
+            (base.get('descripcion') or '').strip()
+            or (row.get('horario_trabajo') or '').strip()
+        )
+        if _is_horario_obsoleto(descripcion):
+            continue
         items.append(
             {
                 **base,

@@ -132,9 +132,22 @@ def _ibuilder_session_cookie() -> str | None:
             timeout=_ibuilder_timeout(),
         )
         response.raise_for_status()
-        set_cookie = response.headers.get('Set-Cookie') or ''
-        match = re.search(r'([^;]+)', set_cookie)
-        return match.group(1) if match else set_cookie or None
+        # Paridad legado Browser::get_cookies — juntar todos name=value.
+        parts: list[str] = []
+        if response.cookies:
+            parts = [f'{c.name}={c.value}' for c in response.cookies]
+        if not parts:
+            raw_headers = getattr(getattr(response, 'raw', None), 'headers', None)
+            all_set = []
+            if raw_headers is not None and hasattr(raw_headers, 'get_all'):
+                all_set = raw_headers.get_all('Set-Cookie') or []
+            elif response.headers.get('Set-Cookie'):
+                all_set = [response.headers.get('Set-Cookie')]
+            for header in all_set:
+                match = re.match(r'([^=]+=[^;]+)', str(header or ''))
+                if match:
+                    parts.append(match.group(1))
+        return '; '.join(parts) if parts else None
     except (RequestException, Timeout) as exc:
         logger.warning('iBuilder session login failed: %s', exc)
         return None

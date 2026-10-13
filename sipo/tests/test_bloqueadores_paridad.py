@@ -361,3 +361,38 @@ class IbuilderWorkerPayloadTests(SimpleTestCase):
                 nombre='JUAN',
             )
         )
+
+
+class IbuilderRutActivoSipIdTests(SimpleTestCase):
+    @patch('sipo.services.candidato_validaciones.is_rut_bloqueado', return_value=False)
+    @patch('sipo.services.candidato_validaciones.is_valid_rut', return_value=True)
+    @patch('sipo.services.candidato_validaciones.format_rut_display', side_effect=lambda r: r)
+    @patch('sipo.services.email_validation.validar_correo_smtp', return_value=True)
+    @patch('sipo.services.candidato_validaciones.resolve_sueldo_minimo', return_value=(True, 0, ''))
+    @patch('sipo.services.candidato_validaciones.match_estandarizacion', return_value=None)
+    @patch('sipo.services.rut_validation.validar_rut_activo')
+    def test_validate_negocio_propaga_sip_id_a_ibuilder(
+        self,
+        mock_activo,
+        _match,
+        _sueldo,
+        _correo,
+        _fmt,
+        _valid,
+        _bloqueado,
+    ):
+        from sipo.services.candidato_validaciones import validate_candidato_negocio
+
+        mock_activo.return_value = {'activo': False, 'motivo': '', 'bypass': False}
+        data = {
+            'cf_rrhh_sip_obra_candidato_rut': '9.676.775-7',
+            'cf_rrhh_sip_obra_candidato_fecha_nacimiento': '1990-01-01',
+            'cf_rrhh_sip_obra_candidato_fecha_ingreso': '2026-09-01',
+            'cf_rrhh_sip_obra_candidato_sueldo': '700000',
+            'cf_rrhh_sip_obra_candidato_nomcar': 'Albañil',
+            'cf_rrhh_sip_obra_candidato_horario_trabajo': 'L-V',
+            'cf_rrhh_sip_obra_candidato_correo': 'a@flesan.cl',
+        }
+        validate_candidato_negocio(data, ubicacion='Santiago', sip_id=1234)
+        mock_activo.assert_called_once()
+        self.assertEqual(mock_activo.call_args.kwargs.get('sip_id'), 1234)

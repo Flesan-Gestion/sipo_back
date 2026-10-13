@@ -1,0 +1,38 @@
+{% extends "emails/base_sip_obra.html" %}
+{% block body %}
+<tr>
+  <td style="padding:0 60px;">
+    <span style="font-weight:bold;">Estimado/a Jefe de Terreno,</span>
+  </td>
+</tr>
+<tr><td height="10" style="height:10px;font-size:0;line-height:0;">&nbsp;</td></tr>
+<tr>
+  <td style="padding:0 60px;">
+    <span style="text-align:justify;">
+      Tiene pendiente la aprobación final de la ficha de ingreso
+      {% if ficha_id %}<b>#{{ ficha_id }}</b>{% endif %}
+      {% if colaborador %} de <b>{{ colaborador }}</b>{% endif %}
+      {% if cargo %} para el cargo <b>{{ cargo }}</b>{% endif %}
+      {% if empresa %} en <b>{{ empresa }}</b>{% endif %}
+      {% if obra %} / obra <b>{{ obra }}</b>{% endif %}
+      {% if centro_costo %} / CC <b>{{ centro_costo }}</b>{% endif %}.
+    </span>
+  </td>
+</tr>
+<tr><td height="10" style="height:10px;font-size:0;line-height:0;">&nbsp;</td></tr>
+<tr>
+  <td style="padding:0 60px;">
+    <span style="text-align:justify;">
+      Ingrese a SIPO con su correo corporativo para revisar la ficha completa y aprobarla en el historial de fichas de ingreso.
+    </span>
+  </td>
+</tr>
+{% if portal_url %}
+<tr><td height="24" style="height:24px;line-height:24px;font-size:14px;">&nbsp;<br>&nbsp;</td></tr>
+<tr>
+  <td style="padding:8px 60px 16px;text-align:center;">
+    <a href="{{ portal_url }}" style="background-color:#FC0404;color:white;text-decoration:none;padding:10px 15px;border-radius:10px;text-align:center;display:inline-block;min-width:300px;">IR A LA PAGINA</a>
+  </td>
+</tr>
+{% endif %}
+{% endblock %}

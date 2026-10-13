@@ -113,6 +113,7 @@ def get_horarios() -> list[dict]:
         WHERE COALESCE(TRIM(external_code), '') <> ''
           AND COALESCE(TRIM(horario_trabajo), '') <> ''
           AND UPPER(horario_trabajo) NOT LIKE '%OBSOLETO%'
+          AND UPPER(horario_trabajo) NOT LIKE '%OBSOLETA%'
         ORDER BY horario_trabajo
         """
     )

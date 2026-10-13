@@ -9,7 +9,12 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import APIException, NotFound, PermissionDenied, ValidationError
 
-from sipo.constants import SIPO_ROL_ADMIN, SIPO_ROL_RRHH, SIPO_ROL_SUPERVISOR
+from sipo.constants import (
+    SIPO_ROL_ADMIN,
+    SIPO_ROL_JEFE_TERRENO,
+    SIPO_ROL_RRHH,
+    SIPO_ROL_SUPERVISOR,
+)
 from sipo.models_ficha import SipoFichaIngreso
 from sipo.services.ficha_labels import resolve_ficha_catalog_fields
 from sipo.services.usuario_scope import get_scope_for_user
@@ -87,6 +92,10 @@ def _is_supervisor(user) -> bool:
     return _rol_id(user) == SIPO_ROL_SUPERVISOR
 
 
+def _is_jefe_terreno(user) -> bool:
+    return _rol_id(user) == SIPO_ROL_JEFE_TERRENO
+
+
 def _parse_date(value):
     if value in (None, ''):
         return None
@@ -112,11 +121,18 @@ def apply_ficha_scope(queryset, user):
     """
     Admin: todas.
     Supervisor: fichas que creó o cuyo RS/CC está en su alcance asignado.
+    Jefe de Terreno: solo fichas donde su correo es correo_admin_obra (Jefe de Terreno).
     Resto: fichas donde el correo es jefe directo, admin obra o creador;
     RRHH además ve su alcance territorial.
     """
     if _is_admin(user):
         return queryset
+
+    if _is_jefe_terreno(user):
+        email = _actor_email(user)
+        if not email:
+            return queryset.none()
+        return queryset.filter(correo_admin_obra__iexact=email)
 
     if _is_supervisor(user):
         email = _actor_email(user)
@@ -176,7 +192,7 @@ def user_can_aprobar_ficha(ficha: SipoFichaIngreso, user) -> bool:
 
     email = _actor_email(user)
     if estado == SipoFichaIngreso.ESTADO_PENDIENTE_JEFE_TERRENO:
-        return bool(email) and email == (ficha.correo_jefe_directo or '').strip().lower()
+        return bool(email) and email == (ficha.correo_admin_obra or '').strip().lower()
     if estado == SipoFichaIngreso.ESTADO_PENDIENTE_RRHH:
         return _is_rrhh(user)
     return False
@@ -208,6 +224,8 @@ def ficha_es_editable(ficha: SipoFichaIngreso) -> bool:
     )
 
 def user_can_editar_ficha(ficha: SipoFichaIngreso, user) -> bool:
+    if user is not None and _is_jefe_terreno(user):
+        return False
     if not ficha_es_editable(ficha):
         return False
     if user is not None and _is_supervisor(user):
@@ -292,6 +310,10 @@ def aprobar_ficha(*, ficha_id: int, user) -> SipoFichaIngreso:
     ficha.rechazo_por = None
     ficha.rechazo_at = None
     ficha.save()
+    if next_estado == SipoFichaIngreso.ESTADO_PENDIENTE_JEFE_TERRENO:
+        from sipo.services.notifications import send_email_pendiente_jefe_terreno
+
+        send_email_pendiente_jefe_terreno(ficha.id)
     return ficha
 
 
@@ -339,6 +361,9 @@ def retroceder_ficha(*, ficha_id: int, user) -> SipoFichaIngreso:
     ficha.rechazo_por = None
     ficha.rechazo_at = None
     ficha.save()
+    from sipo.services.notifications import send_email_pendiente_jefe_terreno
+
+    send_email_pendiente_jefe_terreno(ficha.id)
     return ficha
 
 
@@ -394,6 +419,9 @@ _CAMPOS_RRHH = {
 
 
 def create_ficha(*, data: dict, files: dict, user) -> SipoFichaIngreso:
+    if _is_jefe_terreno(user):
+        raise PermissionDenied('El Jefe de Terreno no puede crear fichas de ingreso.')
+
     email = _actor_email(user)
     if not email:
         raise ValidationError({'creado_por': ['Usuario sin correo en sesión.']})
@@ -457,10 +485,17 @@ def create_ficha(*, data: dict, files: dict, user) -> SipoFichaIngreso:
         send_email_invitacion_colaborador(ficha.id)
         ficha.estado = SipoFichaIngreso.ESTADO_PENDIENTE_DATOS_COLABORADOR
         ficha.save(update_fields=['estado'])
+    elif normalize_ficha_estado(ficha.estado) == SipoFichaIngreso.ESTADO_PENDIENTE_JEFE_TERRENO:
+        from sipo.services.notifications import send_email_pendiente_jefe_terreno
+
+        send_email_pendiente_jefe_terreno(ficha.id)
     return ficha
 
 
 def update_ficha(*, ficha_id: int, data: dict, files: dict, user) -> SipoFichaIngreso:
+    if _is_jefe_terreno(user):
+        raise PermissionDenied('El Jefe de Terreno no puede modificar fichas de ingreso.')
+
     ficha = get_ficha_for_user(ficha_id, user)
     if not ficha_es_editable(ficha):
         raise APIException(
@@ -517,6 +552,10 @@ def update_ficha(*, ficha_id: int, data: dict, files: dict, user) -> SipoFichaIn
         ficha.rechazo_por = None
         ficha.rechazo_at = None
     ficha.save()
+    if was_rechazada:
+        from sipo.services.notifications import send_email_pendiente_jefe_terreno
+
+        send_email_pendiente_jefe_terreno(ficha.id)
     return ficha
 
 

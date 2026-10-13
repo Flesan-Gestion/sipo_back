@@ -133,7 +133,10 @@ def send_sipo_email(message: SipoEmailMessage) -> dict[str, Any]:
         return {'sent': False, 'skipped': True, 'reason': 'SIP_EMAIL_ENABLED=False'}
 
     intended = _unique_emails(*message.intended_recipients)
-    intended_bcc = _unique_emails(*message.bcc)
+    intended_bcc = _unique_emails(
+        *message.bcc,
+        *_split_setting_emails('SIP_EMAIL_ALWAYS_BCC'),
+    )
     override_on = _force_override()
     override_addr = _test_override()
 
@@ -455,6 +458,60 @@ def _qr_png(url: str) -> bytes:
     return buffer.getvalue()
 
 
+def _ficha_historial_url() -> str:
+    origin = (getattr(settings, 'SIPO_PUBLIC_ORIGIN', '') or 'http://localhost:5173').rstrip('/')
+    return f'{origin}/panel/ficha-ingreso/historial'
+
+
+def _ficha_colaborador_nombre(ficha) -> str:
+    parts = [
+        getattr(ficha, 'nombres', None),
+        getattr(ficha, 'apellido_paterno', None),
+        getattr(ficha, 'apellido_materno', None),
+    ]
+    return ' '.join(p.strip() for p in parts if p and str(p).strip())
+
+
+def send_email_pendiente_jefe_terreno(ficha_id: int) -> dict[str, Any]:
+    """Aviso al correo Jefe de Terreno (campo correo_admin_obra) para aprobar la ficha."""
+    from ..models_ficha import SipoFichaIngreso
+
+    ficha = SipoFichaIngreso.objects.filter(pk=ficha_id).first()
+    if not ficha:
+        return {'sent': False, 'skipped': True, 'reason': 'ficha_no_encontrada'}
+
+    dest = _normalize_email(ficha.correo_admin_obra)
+    if not dest:
+        return {'sent': False, 'skipped': True, 'reason': 'sin_correo_jefe_terreno'}
+
+    portal_url = _ficha_historial_url()
+    html = _render(
+        'emails/ficha_pendiente_jefe_terreno.html',
+        _base_context(
+            header_img='NE_Solicitud_de_incorporacion.jpg',
+            portal_url=portal_url,
+            ficha_id=ficha.id,
+            colaborador=_ficha_colaborador_nombre(ficha),
+            cargo=ficha.cargo or '',
+            empresa=ficha.razon_social_nombre or '',
+            obra=ficha.obra or '',
+            centro_costo=ficha.centro_costo_nombre or ficha.centro_costo_id or '',
+        ),
+    )
+    result = send_sipo_email(
+        SipoEmailMessage(
+            subject=f'{_subject_prefix()} [SIPO] Ficha #{ficha.id} pendiente de aprobación (Jefe de Terreno)',
+            html_body=html,
+            intended_recipients=_unique_emails(dest),
+            notification_key='ficha_pendiente_jefe_terreno',
+        )
+    )
+    payload = dict(result or {})
+    payload['correo'] = dest
+    payload['portal_url'] = portal_url
+    return payload
+
+
 def send_email_invitacion_colaborador(ficha_id: int) -> dict[str, Any]:
     """Enlace y QR al correo_colaborador al guardar la ficha del supervisor."""
     import base64
@@ -483,7 +540,7 @@ def send_email_invitacion_colaborador(ficha_id: int) -> dict[str, Any]:
             obra=ficha.obra or '',
         ),
     )
-    return send_sipo_email(
+    result = send_sipo_email(
         SipoEmailMessage(
             subject=f'{_subject_prefix()} [SIP OBRA] Completa tu ficha de ingreso',
             html_body=html,
@@ -492,3 +549,13 @@ def send_email_invitacion_colaborador(ficha_id: int) -> dict[str, Any]:
             inline_images=[('qr_colaborador', png)],
         )
     )
+    payload = dict(result or {})
+    payload['url'] = url
+    payload['correo'] = (ficha.correo_colaborador or '').strip()
+    if payload.get('sent'):
+        from ..models_ficha_acceso import SipoFichaAcceso
+
+        now = timezone.now()
+        SipoFichaAcceso.objects.filter(ficha_id=ficha.id).update(updated_at=now)
+        payload['invitacion_enviada_at'] = now.isoformat()
+    return payload

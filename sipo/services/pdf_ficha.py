@@ -179,7 +179,7 @@ def build_ficha_pdf(ficha: SipoFichaIngreso) -> bytes:
             ],
             [
                 _cell('Correo Jefe Directo', ficha.correo_jefe_directo, styles),
-                _cell('Correo Admin. Obra', ficha.correo_admin_obra, styles),
+                _cell('Correo Jefe de Terreno', ficha.correo_admin_obra, styles),
             ],
         ],
     )
@@ -336,7 +336,7 @@ def build_ficha_pdf(ficha: SipoFichaIngreso) -> bytes:
             [
                 Paragraph('__________________________<br/><b>V° B° Jefe Directo</b>', styles['firma']),
                 Paragraph(
-                    '__________________________<br/><b>V° B° Administrador de Obra</b>',
+                    '__________________________<br/><b>V° B° Jefe de Terreno</b>',
                     styles['firma'],
                 ),
                 Paragraph('__________________________<br/><b>V° B° Recursos Humanos</b>', styles['firma']),

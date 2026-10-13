@@ -184,6 +184,25 @@ class SipoFichaAccesoView(APIView):
         ).response()
 
 
+class SipoFichaReenviarInvitacionView(APIView):
+    permission_classes = [IsSipoAuthenticated]
+
+    def post(self, request, ficha_id: int):
+        get_ficha_for_user(ficha_id, request.user)
+        from .services.notifications import send_email_invitacion_colaborador
+
+        result = send_email_invitacion_colaborador(ficha_id)
+        if result.get('skipped') or not result.get('sent', True):
+            reason = result.get('reason') or 'No se pudo reenviar la invitación.'
+            mensajes = {
+                'ficha_no_encontrada': 'Ficha no encontrada.',
+                'sin_destinatarios': 'La ficha no tiene correo del colaborador.',
+                'SIP_EMAIL_ENABLED=False': 'El envío de correos está deshabilitado.',
+            }
+            raise APIException(detail=mensajes.get(reason, reason))
+        return ApiResponseSuccess(result).response()
+
+
 class SipoFichaPdfView(APIView):
     permission_classes = [IsSipoAuthenticated]
 

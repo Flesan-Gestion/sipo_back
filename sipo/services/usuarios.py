@@ -7,7 +7,7 @@ from rest_framework.exceptions import NotFound, ValidationError
 
 from security.models import SipoRol
 
-from sipo.constants import SIPO_ROL_ADMIN, SIPO_ROL_SUPERVISOR
+from sipo.constants import SIPO_ROL_ADMIN, SIPO_ROL_JEFE_TERRENO, SIPO_ROL_SUPERVISOR
 
 from .usuario_scope import (
     delete_assignments_for_perfil,
@@ -270,8 +270,21 @@ def ensure_supervisor_rol() -> None:
         )
 
 
+def ensure_jefe_terreno_rol() -> None:
+    with connections[SIP_DB].cursor() as cursor:
+        cursor.execute(
+            """
+            INSERT INTO cf_rrhh_sip_rol (cf_rol_id, cf_rol_name)
+            VALUES (%s, 'Jefe de Terreno')
+            ON DUPLICATE KEY UPDATE cf_rol_name = 'Jefe de Terreno'
+            """,
+            [SIPO_ROL_JEFE_TERRENO],
+        )
+
+
 def list_sipo_perfiles_roles() -> list[dict]:
     ensure_supervisor_rol()
+    ensure_jefe_terreno_rol()
     roles = SipoRol.objects.using(SIP_DB).all().order_by('cf_rol_id')
     items = [
         {'cf_rol_id': int(r.cf_rol_id), 'cf_rol_name': (r.cf_rol_name or '').strip()}
@@ -280,5 +293,7 @@ def list_sipo_perfiles_roles() -> list[dict]:
     ids = {item['cf_rol_id'] for item in items}
     if SIPO_ROL_SUPERVISOR not in ids:
         items.append({'cf_rol_id': SIPO_ROL_SUPERVISOR, 'cf_rol_name': 'Supervisor'})
-        items.sort(key=lambda row: row['cf_rol_id'])
+    if SIPO_ROL_JEFE_TERRENO not in ids:
+        items.append({'cf_rol_id': SIPO_ROL_JEFE_TERRENO, 'cf_rol_name': 'Jefe de Terreno'})
+    items.sort(key=lambda row: row['cf_rol_id'])
     return items

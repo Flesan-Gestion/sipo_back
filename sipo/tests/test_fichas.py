@@ -12,7 +12,7 @@ from rest_framework import status
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from sipo.constants import SIPO_ROL_ADMIN, SIPO_ROL_RRHH
+from sipo.constants import SIPO_ROL_ADMIN, SIPO_ROL_JEFE_TERRENO, SIPO_ROL_RRHH
 from sipo.models_ficha import SipoFichaIngreso
 from sipo.services.fichas import (
     aprobar_ficha,
@@ -59,7 +59,7 @@ def _rrhh_user():
 def _jefe_user(email='jefe@flesan.cl'):
     user = MagicMock()
     user.is_authenticated = True
-    user.sip_rol_id = 3
+    user.sip_rol_id = SIPO_ROL_JEFE_TERRENO
     user.email = email
     user.id = 3
     user.pk = 3
@@ -140,7 +140,8 @@ def _seed_ficha(**overrides):
         'nombres': 'Martin',
         'apellido_paterno': 'Norambuena',
         'apellido_materno': 'Herrera',
-        'correo_jefe_directo': 'jefe@flesan.cl',
+        'correo_jefe_directo': 'jefe.planta@flesan.cl',
+        'correo_admin_obra': 'jefe@flesan.cl',
         'cargo': 'Analista',
         'estado': SipoFichaIngreso.ESTADO_PENDIENTE_JEFE_TERRENO,
         'creado_por': 'admin@flesan.cl',
@@ -149,7 +150,7 @@ def _seed_ficha(**overrides):
     return SipoFichaIngreso.objects.create(**defaults)
 
 
-@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp(), SIP_EMAIL_ENABLED=False)
 class SipoFichaCreateTests(TestCase):
     def setUp(self):
         self.factory = APIRequestFactory()
@@ -215,7 +216,7 @@ class SipoFichaCreateTests(TestCase):
                 )
 
 
-@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp(), SIP_EMAIL_ENABLED=False)
 class SipoFichaAprobacionFlujoTests(TestCase):
     def setUp(self):
         self.factory = APIRequestFactory()

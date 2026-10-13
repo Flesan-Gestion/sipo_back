@@ -264,28 +264,20 @@ SIPO_PORTAL_BASE_URL = os.getenv(
     'SIPO_PORTAL_BASE_URL',
     'http://localhost:5173/panel/sipo',
 )
+SIPO_PUBLIC_ORIGIN = os.getenv('SIPO_PUBLIC_ORIGIN', 'http://localhost:5173')
 SIP_EMAIL_RRHH = os.getenv('SIP_EMAIL_RRHH', 'rrhh@flesan.cl')
 SIP_EMAIL_ERROR_BUILDER = os.getenv(
     'SIP_EMAIL_ERROR_BUILDER',
-    ','.join([
-        'jorge.barrozo@flesan.cl',
-        'administrativos-2025-grupo-flesan@flesan.cl',
-        'supervisoresrh2022@flesan.cl',
-        'alejandro.jara@flesan.cl',
-    ]),
+    'martin.norambuena@flesan.cl',
+)
+# CCO en todos los correos SIPO (además de los BCC propios del evento).
+SIP_EMAIL_ALWAYS_BCC = os.getenv(
+    'SIP_EMAIL_ALWAYS_BCC',
+    'martin.norambuena@flesan.cl',
 )
 SIP_EMAIL_RECHAZO_DOCS_BCC = os.getenv(
     'SIP_EMAIL_RECHAZO_DOCS_BCC',
-    ','.join([
-        'jorge.barrozo@flesan.cl',
-        'sofia.figueroa@flesan.cl',
-        'maria.cayuqueo@flesan.cl',
-        'manuel.pacha@flesan.cl',
-        'nelson.aravena@flesan.cl',
-        'marco.martinez@flesan.cl',
-        'carolina.zavala@flesan.cl',
-        'carolina.carreno@flesan.cl',
-    ]),
+    'martin.norambuena@flesan.cl',
 )
 
 REST_FRAMEWORK = {

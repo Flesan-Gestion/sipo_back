@@ -2,7 +2,12 @@ from rest_framework import status
 from rest_framework.exceptions import APIException
 from rest_framework.permissions import BasePermission
 
-from .constants import SIPO_ROL_ADMIN, SIPO_ROL_RRHH, SIPO_ROL_SUPERVISOR
+from .constants import (
+    SIPO_ROL_ADMIN,
+    SIPO_ROL_JEFE_TERRENO,
+    SIPO_ROL_RRHH,
+    SIPO_ROL_SUPERVISOR,
+)
 
 SUPERVISOR_ALLOWED_PREFIXES = (
     '/api/sipo/fichas',
@@ -19,6 +24,11 @@ SUPERVISOR_ALLOWED_PREFIXES = (
     '/sipo/candidatos/validar-correo',
     '/api/sipo/candidatos/validar-rut',
     '/sipo/candidatos/validar-rut',
+)
+
+JEFE_TERRENO_ALLOWED_PREFIXES = (
+    '/api/sipo/fichas',
+    '/sipo/fichas',
 )
 
 
@@ -38,12 +48,16 @@ class IsSipoAuthenticated(BasePermission):
     def has_permission(self, request, view):
         user = _require_authenticated(request)
         rol = int(getattr(user, 'sip_rol_id', -1) or -1)
-        if rol != SIPO_ROL_SUPERVISOR:
-            return True
         path = request.path or ''
-        if any(path.startswith(prefix) for prefix in SUPERVISOR_ALLOWED_PREFIXES):
-            return True
-        raise APIException(self.message, status.HTTP_403_FORBIDDEN)
+        if rol == SIPO_ROL_SUPERVISOR:
+            if any(path.startswith(prefix) for prefix in SUPERVISOR_ALLOWED_PREFIXES):
+                return True
+            raise APIException(self.message, status.HTTP_403_FORBIDDEN)
+        if rol == SIPO_ROL_JEFE_TERRENO:
+            if any(path.startswith(prefix) for prefix in JEFE_TERRENO_ALLOWED_PREFIXES):
+                return True
+            raise APIException(self.message, status.HTTP_403_FORBIDDEN)
+        return True
 
 
 class IsSipoAdmin(BasePermission):

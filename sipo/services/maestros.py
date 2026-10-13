@@ -233,6 +233,52 @@ def get_cargos_catalogo() -> list[dict]:
         return []
 
 
+def get_ruts_empresa_con_cargo(cargo: str | None) -> list[str]:
+    """RUTs de razón social que tienen el cargo (nombre o external_code)."""
+    cargo_norm = (cargo or '').strip()
+    if not cargo_norm:
+        return []
+    try:
+        with connections[SIPO_OBRA_DB].cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT DISTINCT TRIM(c.rut_empresa)
+                FROM cf_rrhh_sip_obra_cargos c
+                LEFT JOIN cargos sap ON sap.external_code = c.external_code
+                WHERE COALESCE(TRIM(c.rut_empresa), '') <> ''
+                  AND COALESCE(TRIM(c.cargo), '') <> ''
+                  AND (sap.`status` = 'A' OR sap.`status` IS NULL)
+                  AND (
+                    UPPER(TRIM(c.cargo)) = UPPER(%s)
+                    OR UPPER(TRIM(c.external_code)) = UPPER(%s)
+                  )
+                ORDER BY TRIM(c.rut_empresa)
+                """,
+                [cargo_norm, cargo_norm],
+            )
+            rows = [str(r[0]).strip() for r in cursor.fetchall() if r and r[0]]
+            if rows:
+                return rows
+            cursor.execute(
+                """
+                SELECT DISTINCT TRIM(rut_empresa)
+                FROM cf_rrhh_sip_obra_cargos
+                WHERE COALESCE(TRIM(rut_empresa), '') <> ''
+                  AND COALESCE(TRIM(cargo), '') <> ''
+                  AND (
+                    UPPER(TRIM(cargo)) = UPPER(%s)
+                    OR UPPER(TRIM(external_code)) = UPPER(%s)
+                  )
+                ORDER BY TRIM(rut_empresa)
+                """,
+                [cargo_norm, cargo_norm],
+            )
+            return [str(r[0]).strip() for r in cursor.fetchall() if r and r[0]]
+    except (OperationalError, ProgrammingError, KeyError) as exc:
+        logger.warning('No se pudieron cargar empresas por cargo: %s', exc)
+        return []
+
+
 def get_ubicaciones_sap(rut: str | None = None) -> list[dict]:
     """Ubicaciones desde flesan_rrhh.sap_maestro_ubicacion (DW), filtradas por empresa."""
     rut_norm = (rut or '').strip()

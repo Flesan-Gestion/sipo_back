@@ -7,6 +7,7 @@ from .views_ficha import (
     SipoFichaDetailView,
     SipoFichaPdfView,
     SipoFichaRechazarView,
+    SipoFichaReenviarInvitacionView,
     SipoFichaRetrocederView,
     SipoFichasListCreateView,
 )
@@ -16,9 +17,13 @@ from .views_users import (
     SipoUsuarioDetailView,
     SipoUsuariosListCreateView,
 )
-from .views_excel import SipoExportarExcelView
+from .views_excel import SipoExportarExcelView, SipoFichasExportarExcelView
 from .views_cargos_horarios import SipoConfigCargosView, SipoConfigEmpresasView, SipoConfigHorariosView
-from .views_maestros import SipoCentrosCostoView, SipoRazonesSocialesView
+from .views_maestros import (
+    SipoCentrosCostoView,
+    SipoEmpresasPorCargoView,
+    SipoRazonesSocialesView,
+)
 from .views_portal import SipoCandidatoAccesoView, SipoPortalCandidatoView
 from .views import (
     SipoCandidatoDetailView,
@@ -51,7 +56,17 @@ urlpatterns = [
     path('sipo/perfiles/', SipoPerfilesListView.as_view(), name='sipo-perfiles'),
     path('sipo/me/alcance/', SipoMiAlcanceView.as_view(), name='sipo-me-alcance'),
     path('sipo/fichas/', SipoFichasListCreateView.as_view(), name='sipo-fichas'),
+    path(
+        'sipo/fichas/exportar-excel/',
+        SipoFichasExportarExcelView.as_view(),
+        name='sipo-fichas-exportar-excel',
+    ),
     path('sipo/fichas/<int:ficha_id>/acceso/', SipoFichaAccesoView.as_view(), name='sipo-ficha-acceso'),
+    path(
+        'sipo/fichas/<int:ficha_id>/reenviar-invitacion/',
+        SipoFichaReenviarInvitacionView.as_view(),
+        name='sipo-ficha-reenviar-invitacion',
+    ),
     path('sipo/fichas/<int:ficha_id>/', SipoFichaDetailView.as_view(), name='sipo-ficha-detail'),
     path('sipo/fichas/<int:ficha_id>/pdf/', SipoFichaPdfView.as_view(), name='sipo-ficha-pdf'),
     path(
@@ -84,6 +99,11 @@ urlpatterns = [
         'sipo/razones-sociales/',
         SipoRazonesSocialesView.as_view(),
         name='sipo-razones-sociales',
+    ),
+    path(
+        'sipo/empresas-por-cargo/',
+        SipoEmpresasPorCargoView.as_view(),
+        name='sipo-empresas-por-cargo',
     ),
     path(
         'sipo/centros-costo/',
