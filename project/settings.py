@@ -134,8 +134,13 @@ DATABASES = {
         'PASSWORD': os.getenv('DB_DW_PASSWORD'),
         'HOST': os.getenv('DB_DW_HOST'),
         'PORT': os.getenv('DB_DW_PORT', '5432'),
+        'CONN_MAX_AGE': 0,
         'OPTIONS': {
-            'options': f"-c search_path={os.getenv('DB_SCHEMA_DW_RRHH', 'flesan_rrhh')},public",
+            'connect_timeout': 3,
+            'options': (
+                f"-c search_path={os.getenv('DB_SCHEMA_DW_RRHH', 'flesan_rrhh')},public "
+                f"-c statement_timeout=5000"
+            ),
         },
     },
 }

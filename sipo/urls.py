@@ -23,6 +23,7 @@ from .views_maestros import (
     SipoCentrosCostoView,
     SipoEmpresasPorCargoView,
     SipoRazonesSocialesView,
+    SipoUbicacionesView,
 )
 from .views_portal import SipoCandidatoAccesoView, SipoPortalCandidatoView
 from .views import (
@@ -109,6 +110,11 @@ urlpatterns = [
         'sipo/centros-costo/',
         SipoCentrosCostoView.as_view(),
         name='sipo-centros-costo',
+    ),
+    path(
+        'sipo/ubicaciones/',
+        SipoUbicacionesView.as_view(),
+        name='sipo-ubicaciones',
     ),
     path(
         'sipo/candidatos/maestros/',

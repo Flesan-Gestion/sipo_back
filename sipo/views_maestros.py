@@ -5,6 +5,7 @@ from utils.responses import ApiResponseSuccess
 from .permissions import IsSipoAuthenticated
 from .services.maestros import (
     get_ruts_empresa_con_cargo,
+    get_ubicaciones,
     list_centros_costo,
     list_razones_sociales,
 )
@@ -44,4 +45,18 @@ class SipoCentrosCostoView(APIView):
             external_code_pais=pais,
             razon_social_id=razon_social_id,
         )
+        return ApiResponseSuccess(items).response()
+
+
+class SipoUbicacionesView(APIView):
+    permission_classes = [IsSipoAuthenticated]
+
+    def get(self, request):
+        rut = (
+            request.query_params.get('rut')
+            or request.query_params.get('razon_social_id')
+            or request.query_params.get('empresa_rut')
+            or ''
+        ).strip()
+        items = get_ubicaciones(rut) if rut else []
         return ApiResponseSuccess(items).response()

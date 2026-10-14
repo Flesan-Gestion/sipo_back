@@ -447,15 +447,20 @@ def get_sipo_maestros(
     external_code_pais: str | None = None,
     *,
     full: bool = False,
+    include_ubicaciones: bool = False,
 ) -> dict:
+    """
+    Cascada + cargos. Ubicaciones DW van aparte (lentas / timeout);
+    usar get_ubicaciones(rut) o include_ubicaciones=True.
+    """
     rut_norm = (rut or '').strip() or None
     if rut_norm:
         data = build_maestros_cascada(
             external_code_pais=external_code_pais,
             empresa_rut=rut_norm,
         )
-        data['ubicaciones'] = get_ubicaciones(rut_norm)
         data['cargos'] = get_cargos_by_empresa(rut_norm)
+        data['ubicaciones'] = get_ubicaciones(rut_norm) if include_ubicaciones else []
     elif full:
         data = build_maestros_cascada(external_code_pais=external_code_pais)
         data['ubicaciones'] = []
