@@ -197,7 +197,14 @@ class SipoMaestrosView(APIView):
 
         rut = request.query_params.get('rut')
         pais = normalize_pais(request.query_params.get('external_code_pais'))
-        data = get_sipo_maestros(rut=rut, user=request.user, external_code_pais=pais)
+        full_raw = (request.query_params.get('full') or '').strip().lower()
+        full = full_raw in ('1', 'true', 'yes', 'si', 'on')
+        data = get_sipo_maestros(
+            rut=rut,
+            user=request.user,
+            external_code_pais=pais,
+            full=full,
+        )
         return ApiResponseSuccess(data).response()
 
 
