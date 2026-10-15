@@ -11,12 +11,23 @@ Las tablas legado (`cf_rrhh_sip_obra`, candidatos, etc.) **ya existen** en MySQL
 
 ## Orden recomendado
 
-1. Ejecutar `scripts/prod_mysql_sip_db_v2.sql` en MySQL **prod**.
+1. Ejecutar `scripts/prod_mysql_sip_db_v2.sql` en MySQL **prod** (tablas alcance, roles 4/5 **y columnas V2** en `cf_rrhh_sip_candidato_obra`: jefe_*, segundo_nombre, sueldo_base, bono_mineria + `external_code_pais` en maestro CC).
 2. Apuntar `.env` al Postgres **prod** de la app.
 3. Preferido: `python manage.py migrate` (crea tablas Django + registra migraciones).
 4. Alternativa: `scripts/prod_postgres_app_v2.sql` y luego igual `migrate` (Django creará lo que falte / marcará estado).
 5. Ajustar flags prod (abajo).
 6. Asignar perfiles a roles Supervisor (4) / Jefe Terreno (5) en MySQL.
+
+### Error típico 1054 (Unknown column …jefe_user_id)
+
+Falta el ALTER de columnas V2 en MySQL. Re-ejecutar `prod_mysql_sip_db_v2.sql` (idempotente) o solo:
+
+```sql
+ALTER TABLE cf_rrhh_sip_candidato_obra
+  ADD COLUMN cf_rrhh_sip_obra_candidato_jefe_user_id VARCHAR(50) NULL,
+  ADD COLUMN cf_rrhh_sip_obra_candidato_jefe_nombre VARCHAR(255) NULL,
+  ADD COLUMN cf_rrhh_sip_obra_candidato_jefe_correo VARCHAR(150) NULL;
+```
 
 ## Flags `.env` producción
 
