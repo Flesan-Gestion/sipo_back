@@ -1,5 +1,6 @@
 SIPO_ID_CUTOFF = 1159
 
+SIPO_ROL_OBRA = 0  # implícito: Google @flesan sin fila en cf_rrhh_sip_perfil
 SIPO_ROL_ADMIN = 1
 SIPO_ROL_RRHH = 2
 SIPO_ROL_JEFE_TERRENO = 5

@@ -9,6 +9,8 @@ logger = logging.getLogger(__name__)
 
 SIPO_OBRA_DB = 'sip_db'
 SIPO_ROL_ADMIN = 1
+SIPO_ROL_OBRA = 0
+SIPO_ROL_OBRA_NAME = 'Usuario obra'
 
 
 @dataclass
@@ -17,8 +19,24 @@ class SipoAccess:
     rol_name: str
 
 
+def _normalized_email(email: str | None) -> str:
+    return (email or '').strip().lower()
+
+
+def _allowed_email_domains() -> set[str]:
+    raw = (os.getenv('SIPO_ALLOWED_EMAIL_DOMAINS') or 'flesan.cl').lower()
+    return {item.strip().lstrip('@') for item in raw.split(',') if item.strip()}
+
+
+def _email_domain_allowed(email: str) -> bool:
+    if '@' not in email:
+        return False
+    domain = email.rsplit('@', 1)[-1]
+    return domain in _allowed_email_domains()
+
+
 def _fetch_rol(email: str | None) -> SipoAccess | None:
-    normalized = (email or '').strip().lower()
+    normalized = _normalized_email(email)
     if not normalized:
         return None
 
@@ -68,13 +86,24 @@ def _rol_from_catalog(rol_id: int) -> SipoAccess | None:
 
 
 def resolve_sipo_access_for_email(email: str | None) -> SipoAccess | None:
+    """
+    1) Perfil explícito en cf_rrhh_sip_perfil.
+    2) DEV_AUTH_ALLOWED_EMAILS → Admin (solo desarrollo).
+    3) Dominio permitido (default @flesan.cl) → rol 0 Usuario obra (sin fila en perfil).
+    """
     access = _fetch_rol(email)
     if access is not None:
         return access
 
+    normalized = _normalized_email(email)
+    if not normalized:
+        return None
+
     allowed = (os.getenv('DEV_AUTH_ALLOWED_EMAILS') or '').lower()
-    normalized = (email or '').strip().lower()
-    if normalized and normalized in {item.strip() for item in allowed.split(',') if item.strip()}:
+    if normalized in {item.strip() for item in allowed.split(',') if item.strip()}:
         return _rol_from_catalog(int(os.getenv('ROL_PERFIL01') or SIPO_ROL_ADMIN))
+
+    if _email_domain_allowed(normalized):
+        return SipoAccess(rol_id=SIPO_ROL_OBRA, rol_name=SIPO_ROL_OBRA_NAME)
 
     return None

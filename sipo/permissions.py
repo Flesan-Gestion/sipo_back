@@ -5,6 +5,7 @@ from rest_framework.permissions import BasePermission
 from .constants import (
     SIPO_ROL_ADMIN,
     SIPO_ROL_JEFE_TERRENO,
+    SIPO_ROL_OBRA,
     SIPO_ROL_RRHH,
     SIPO_ROL_SUPERVISOR,
 )
@@ -35,6 +36,11 @@ JEFE_TERRENO_ALLOWED_PREFIXES = (
     '/sipo/fichas',
 )
 
+OBRA_IMPLICITO_BLOCKED_PREFIXES = (
+    '/api/sipo/fichas',
+    '/sipo/fichas',
+)
+
 
 def _require_authenticated(request):
     user = getattr(request, 'user', None)
@@ -61,6 +67,10 @@ class IsSipoAuthenticated(BasePermission):
             if any(path.startswith(prefix) for prefix in JEFE_TERRENO_ALLOWED_PREFIXES):
                 return True
             raise APIException(self.message, status.HTTP_403_FORBIDDEN)
+        if rol == SIPO_ROL_OBRA:
+            if any(path.startswith(prefix) for prefix in OBRA_IMPLICITO_BLOCKED_PREFIXES):
+                raise APIException(self.message, status.HTTP_403_FORBIDDEN)
+            return True
         return True
 
 

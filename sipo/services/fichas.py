@@ -12,6 +12,7 @@ from rest_framework.exceptions import APIException, NotFound, PermissionDenied, 
 from sipo.constants import (
     SIPO_ROL_ADMIN,
     SIPO_ROL_JEFE_TERRENO,
+    SIPO_ROL_OBRA,
     SIPO_ROL_RRHH,
     SIPO_ROL_SUPERVISOR,
 )
@@ -421,6 +422,8 @@ _CAMPOS_RRHH = {
 def create_ficha(*, data: dict, files: dict, user) -> SipoFichaIngreso:
     if _is_jefe_terreno(user):
         raise PermissionDenied('El Jefe de Terreno no puede crear fichas de ingreso.')
+    if _rol_id(user) == SIPO_ROL_OBRA:
+        raise PermissionDenied('No tiene permiso para crear fichas de ingreso.')
 
     email = _actor_email(user)
     if not email:
